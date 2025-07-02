@@ -13,18 +13,18 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'NFT Marketplace - Mint, Trade, Collect',
-  description: 'A decentralized NFT marketplace built on Polygon with DIP token payments',
+  title: 'Moscow NFTs',
+  description: 'A decentralized Moscow NFTs built on Polygon with DIP token payments',
   keywords: ['NFT', 'marketplace', 'polygon', 'web3', 'crypto'],
-  authors: [{ name: 'NFT Marketplace Team' }],
+  authors: [{ name: 'Moscow Team' }],
   openGraph: {
-    title: 'NFT Marketplace',
+    title: 'Moscow NFTs',
     description: 'Discover, collect, and sell extraordinary NFTs',
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'NFT Marketplace',
+    title: 'Moscow NFTs',
     description: 'Discover, collect, and sell extraordinary NFTs',
   },
   viewport: 'width=device-width, initial-scale=1',

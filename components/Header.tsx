@@ -5,17 +5,15 @@ import { usePathname } from 'next/navigation';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { Palette, Home, Plus, User } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { useI18n } from '@/hooks/useI18n';
 import { cn } from '@/lib/utils';
 
 export const Header = () => {
   const pathname = usePathname();
-  const { t } = useI18n();
 
   const navItems = [
-    { href: '/', label: t('nav.home', 'Home'), icon: Home },
-    { href: '/create', label: t('nav.create', 'Create'), icon: Plus },
-    { href: '/my-nfts', label: t('nav.my_nfts', 'My NFTs'), icon: User },
+    { href: '/', label: 'Inicio', icon: Home },
+    { href: '/create', label: 'Crear', icon: Plus },
+    { href: '/my-nfts', label: 'Mis NFTs', icon: User },
   ];
 
   return (
@@ -28,7 +26,7 @@ export const Header = () => {
           >
             <Palette className="h-6 w-6 text-primary" />
           </motion.div>
-          NFT Marketplace
+          Moscow NFTs
         </Link>
 
         <nav className="hidden md:flex items-center gap-6">

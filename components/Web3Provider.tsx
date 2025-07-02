@@ -22,7 +22,7 @@ if (!projectId || projectId === 'demo') {
 }
 
 const config = getDefaultConfig({
-  appName: 'NFT Marketplace',
+  appName: 'Moscow NFTs',
   projectId: projectId || 'demo',
   chains: [polygonAmoy],
   ssr: true,

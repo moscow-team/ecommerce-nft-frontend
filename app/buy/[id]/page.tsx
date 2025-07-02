@@ -17,14 +17,13 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { useMarketplace } from '@/hooks/useMarketplace';
 import { useNFTs } from '@/hooks/useNFTs';
-import { useI18n } from '@/hooks/useI18n';
 import { CONTRACTS, ERC20_ABI } from '@/lib/contracts';
 import { NFT } from '@/types';
 
 interface BuyNFTPageProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 export default function BuyNFTPage({ params }: BuyNFTPageProps) {
@@ -32,14 +31,13 @@ export default function BuyNFTPage({ params }: BuyNFTPageProps) {
   const { address, isConnected } = useAccount();
   const { buyNFT } = useMarketplace();
   const { fetchNFTMetadata } = useNFTs();
-  const { t } = useI18n();
   
   const [nft, setNft] = useState<NFT | null>(null);
   const [loading, setLoading] = useState(true);
   const [purchasing, setPurchasing] = useState(false);
   const [step, setStep] = useState<'approval' | 'purchase' | 'complete'>('approval');
 
-  const tokenId = parseInt(params.id);
+  const [tokenId, setTokenId] = useState<number>(0);
 
   // Get user's DIP balance
   const { data: dipBalance } = useReadContract({
@@ -60,16 +58,20 @@ export default function BuyNFTPage({ params }: BuyNFTPageProps) {
   useEffect(() => {
     const loadNFT = async () => {
       try {
-        const nftData = await fetchNFTMetadata(tokenId);
+        const resolvedParams = await params;
+        const parsedTokenId = parseInt(resolvedParams.id);
+        setTokenId(parsedTokenId);
+        
+        const nftData = await fetchNFTMetadata(parsedTokenId);
         if (nftData) {
           setNft(nftData as NFT);
         } else {
-          toast.error('NFT not found');
+          toast.error('NFT no encontrado');
           router.push('/');
         }
       } catch (error) {
         console.error('Error loading NFT:', error);
-        toast.error('Failed to load NFT');
+        toast.error('Error al cargar NFT');
         router.push('/');
       } finally {
         setLoading(false);
@@ -77,16 +79,16 @@ export default function BuyNFTPage({ params }: BuyNFTPageProps) {
     };
 
     loadNFT();
-  }, [tokenId, fetchNFTMetadata, router]);
+  }, [params, fetchNFTMetadata, router]);
 
   const handlePurchase = async () => {
     if (!nft || !address || !isConnected) {
-      toast.error('Please connect your wallet');
+      toast.error('Por favor conecta tu billetera');
       return;
     }
 
     if (!nft.isListed || !nft.price || nft.price === '0') {
-      toast.error('This NFT is not for sale');
+      toast.error('Este NFT no está en venta');
       return;
     }
 
@@ -95,7 +97,7 @@ export default function BuyNFTPage({ params }: BuyNFTPageProps) {
     const userBalance = dipBalance || 0n;
 
     if (userBalance < priceInWei) {
-      toast.error('Insufficient DIP balance');
+      toast.error('Saldo insuficiente de DIP');
       return;
     }
 
@@ -110,7 +112,7 @@ export default function BuyNFTPage({ params }: BuyNFTPageProps) {
       }, 3000);
     } catch (error: any) {
       console.error('Purchase failed:', error);
-      toast.error(error.message || 'Purchase failed');
+      toast.error(error.message || 'Error en la compra');
     } finally {
       setPurchasing(false);
     }
@@ -130,12 +132,12 @@ export default function BuyNFTPage({ params }: BuyNFTPageProps) {
         <Card>
           <CardContent className="p-8">
             <div className="text-6xl mb-4">❌</div>
-            <h2 className="text-2xl font-bold mb-4">NFT Not Found</h2>
+            <h2 className="text-2xl font-bold mb-4">NFT No Encontrado</h2>
             <p className="text-muted-foreground mb-6">
-              The NFT you're looking for doesn't exist or has been removed.
+              El NFT que buscas no existe o ha sido eliminado.
             </p>
             <Button asChild>
-              <Link href="/">Back to Marketplace</Link>
+              <Link href="/">Volver al Mercado</Link>
             </Button>
           </CardContent>
         </Card>
@@ -149,9 +151,9 @@ export default function BuyNFTPage({ params }: BuyNFTPageProps) {
         <Card>
           <CardContent className="p-8">
             <div className="text-6xl mb-4">🔒</div>
-            <h2 className="text-2xl font-bold mb-4">Connect Your Wallet</h2>
+            <h2 className="text-2xl font-bold mb-4">Conecta tu Billetera</h2>
             <p className="text-muted-foreground mb-6">
-              Connect your wallet to purchase this NFT.
+              Conecta tu billetera para comprar este NFT.
             </p>
           </CardContent>
         </Card>
@@ -195,10 +197,10 @@ export default function BuyNFTPage({ params }: BuyNFTPageProps) {
                 </div>
                 {nft.isListed ? (
                   <Badge variant="default" className="bg-green-500">
-                    For Sale
+                    En Venta
                   </Badge>
                 ) : (
-                  <Badge variant="secondary">Not Listed</Badge>
+                  <Badge variant="secondary">No Listado</Badge>
                 )}
               </div>
             </CardHeader>
@@ -208,7 +210,7 @@ export default function BuyNFTPage({ params }: BuyNFTPageProps) {
               <Separator />
               
               <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Owner</span>
+                <span className="text-sm text-muted-foreground">Propietario</span>
                 <span className="font-mono text-sm">
                   {nft.owner.slice(0, 6)}...{nft.owner.slice(-4)}
                 </span>
@@ -218,7 +220,7 @@ export default function BuyNFTPage({ params }: BuyNFTPageProps) {
                 <>
                   <Separator />
                   <div className="flex items-center justify-between">
-                    <span className="text-lg font-semibold">Price</span>
+                    <span className="text-lg font-semibold">Precio</span>
                     <span className="text-2xl font-bold text-primary">
                       {price} DIP
                     </span>
@@ -234,12 +236,12 @@ export default function BuyNFTPage({ params }: BuyNFTPageProps) {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <ShoppingCart className="h-5 w-5" />
-                  {t('buy.title', 'Purchase NFT')}
+                  Comprar NFT
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <span className="text-sm">Your DIP Balance</span>
+                  <span className="text-sm">Tu Saldo de DIP</span>
                   <span className="font-semibold">{userBalance} DIP</span>
                 </div>
 
@@ -247,7 +249,7 @@ export default function BuyNFTPage({ params }: BuyNFTPageProps) {
                   <Alert>
                     <AlertCircle className="h-4 w-4" />
                     <AlertDescription>
-                      Insufficient DIP balance. You need {price} DIP to purchase this NFT.
+                      Saldo insuficiente de DIP. Necesitas {price} DIP para comprar este NFT.
                     </AlertDescription>
                   </Alert>
                 )}
@@ -255,12 +257,12 @@ export default function BuyNFTPage({ params }: BuyNFTPageProps) {
                 {step === 'complete' ? (
                   <div className="text-center py-6">
                     <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
-                    <h3 className="text-xl font-semibold mb-2">Purchase Complete!</h3>
+                    <h3 className="text-xl font-semibold mb-2">¡Compra Completada!</h3>
                     <p className="text-muted-foreground mb-4">
-                      The NFT has been transferred to your wallet.
+                      El NFT ha sido transferido a tu billetera.
                     </p>
                     <Button asChild>
-                      <Link href="/my-nfts">View in My NFTs</Link>
+                      <Link href="/my-nfts">Ver en Mis NFTs</Link>
                     </Button>
                   </div>
                 ) : (
@@ -273,19 +275,19 @@ export default function BuyNFTPage({ params }: BuyNFTPageProps) {
                     {purchasing ? (
                       <>
                         <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                        Processing...
+                        Procesando...
                       </>
                     ) : (
                       <>
                         <ShoppingCart className="h-5 w-5 mr-2" />
-                        {t('buy.confirm', 'Purchase for')} {price} DIP
+                        Comprar por {price} DIP
                       </>
                     )}
                   </Button>
                 )}
 
                 <p className="text-xs text-muted-foreground text-center">
-                  This will approve DIP token spending and complete the purchase in two transactions.
+                  Esto aprobará el gasto de tokens DIP y completará la compra en dos transacciones.
                 </p>
               </CardContent>
             </Card>
@@ -295,7 +297,7 @@ export default function BuyNFTPage({ params }: BuyNFTPageProps) {
             <Alert>
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
-                You already own this NFT.
+                Ya eres propietario de este NFT.
               </AlertDescription>
             </Alert>
           )}
@@ -304,7 +306,7 @@ export default function BuyNFTPage({ params }: BuyNFTPageProps) {
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">View on Polygonscan</span>
+                <span className="text-sm text-muted-foreground">Ver en Polygonscan</span>
                 <Button variant="ghost" size="sm" asChild>
                   <Link
                     href={`https://amoy.polygonscan.com/token/${CONTRACTS.NFT_ADDRESS}?a=${nft.tokenId}`}

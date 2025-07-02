@@ -14,41 +14,39 @@ import { NFTCard } from '@/components/NFTCard';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { useNFTs } from '@/hooks/useNFTs';
 import { useMarketplace } from '@/hooks/useMarketplace';
-import { useI18n } from '@/hooks/useI18n';
 import api from '@/lib/axios';
 
 export default function MyNFTsPage() {
   const { address, isConnected } = useAccount();
   const { nfts, loading, loadUserNFTs } = useNFTs();
   const { withdraw } = useMarketplace();
-  const { t } = useI18n();
   const [pendingWithdrawals, setPendingWithdrawals] = useState('0');
   const [isWithdrawing, setIsWithdrawing] = useState(false);
 
   useEffect(() => {
+    const loadPendingWithdrawals = async () => {
+      if (!address) return;
+      
+      try {
+        const response = await api.get(`/api/market/withdrawals/${address}`);
+        setPendingWithdrawals(response.data.amount || '0');
+      } catch (error) {
+        console.error('Error loading pending withdrawals:', error);
+      }
+    };
+
     if (isConnected && address) {
       loadUserNFTs();
       loadPendingWithdrawals();
     }
   }, [isConnected, address, loadUserNFTs]);
 
-  const loadPendingWithdrawals = async () => {
-    if (!address) return;
-    
-    try {
-      const response = await api.get(`/api/market/withdrawals/${address}`);
-      setPendingWithdrawals(response.data.amount || '0');
-    } catch (error) {
-      console.error('Error loading pending withdrawals:', error);
-    }
-  };
-
   const handleWithdraw = async () => {
     setIsWithdrawing(true);
     try {
       await withdraw();
       setPendingWithdrawals('0');
-      toast.success('Funds withdrawn successfully!');
+      toast.success('¡Fondos retirados exitosamente!');
     } catch (error) {
       console.error('Error withdrawing funds:', error);
     } finally {
@@ -62,9 +60,9 @@ export default function MyNFTsPage() {
         <Card>
           <CardContent className="p-8">
             <div className="text-6xl mb-4">🔒</div>
-            <h2 className="text-2xl font-bold mb-4">Connect Your Wallet</h2>
+            <h2 className="text-2xl font-bold mb-4">Conecta tu Billetera</h2>
             <p className="text-muted-foreground mb-6">
-              Connect your wallet to view your NFTs and manage your collection.
+              Conecta tu billetera para ver tus NFTs y gestionar tu colección.
             </p>
           </CardContent>
         </Card>
@@ -84,17 +82,17 @@ export default function MyNFTsPage() {
       >
         <div>
           <h1 className="text-3xl font-bold mb-2">
-            {t('my_nfts.title', 'My NFTs')}
+            Mis NFTs
           </h1>
           <p className="text-muted-foreground">
-            Manage your NFT collection and earnings
+            Gestiona tu colección de NFTs y ganancias
           </p>
         </div>
         
         <Button asChild>
           <Link href="/create">
             <Plus className="h-4 w-4 mr-2" />
-            Create NFT
+            Crear NFT
           </Link>
         </Button>
       </motion.div>
@@ -114,7 +112,7 @@ export default function MyNFTsPage() {
               </div>
               <div>
                 <div className="text-2xl font-bold">{ownedNFTs.length}</div>
-                <div className="text-sm text-muted-foreground">NFTs Owned</div>
+                <div className="text-sm text-muted-foreground">NFTs Propios</div>
               </div>
             </div>
           </CardContent>
@@ -128,7 +126,7 @@ export default function MyNFTsPage() {
               </div>
               <div>
                 <div className="text-2xl font-bold">{listedNFTs.length}</div>
-                <div className="text-sm text-muted-foreground">Listed for Sale</div>
+                <div className="text-sm text-muted-foreground">Listados para Venta</div>
               </div>
             </div>
           </CardContent>
@@ -141,7 +139,7 @@ export default function MyNFTsPage() {
                 <div className="text-2xl font-bold">
                   {formatEther(BigInt(pendingWithdrawals))} DIP
                 </div>
-                <div className="text-sm text-muted-foreground">Pending Withdrawals</div>
+                <div className="text-sm text-muted-foreground">Retiros Pendientes</div>
               </div>
               <Button
                 size="sm"
@@ -151,7 +149,7 @@ export default function MyNFTsPage() {
                 {isWithdrawing ? (
                   <LoadingSpinner size={16} />
                 ) : (
-                  t('my_nfts.withdraw', 'Withdraw')
+                  'Retirar'
                 )}
               </Button>
             </div>
@@ -167,8 +165,8 @@ export default function MyNFTsPage() {
       >
         <Tabs defaultValue="owned" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="owned">Owned NFTs ({ownedNFTs.length})</TabsTrigger>
-            <TabsTrigger value="listed">Listed ({listedNFTs.length})</TabsTrigger>
+            <TabsTrigger value="owned">NFTs Propios ({ownedNFTs.length})</TabsTrigger>
+            <TabsTrigger value="listed">Listados ({listedNFTs.length})</TabsTrigger>
           </TabsList>
           
           <TabsContent value="owned" className="mt-6">
@@ -194,12 +192,12 @@ export default function MyNFTsPage() {
               <Card className="p-12 text-center">
                 <CardContent>
                   <div className="text-6xl mb-4">🎨</div>
-                  <h3 className="text-xl font-semibold mb-2">No NFTs Yet</h3>
+                  <h3 className="text-xl font-semibold mb-2">Aún no tienes NFTs</h3>
                   <p className="text-muted-foreground mb-6">
-                    Create your first NFT to get started!
+                    ¡Crea tu primer NFT para comenzar!
                   </p>
                   <Button asChild>
-                    <Link href="/create">Create Your First NFT</Link>
+                    <Link href="/create">Crea tu primer NFT</Link>
                   </Button>
                 </CardContent>
               </Card>
@@ -217,9 +215,9 @@ export default function MyNFTsPage() {
               <Card className="p-12 text-center">
                 <CardContent>
                   <div className="text-6xl mb-4">🏪</div>
-                  <h3 className="text-xl font-semibold mb-2">No Listed NFTs</h3>
+                  <h3 className="text-xl font-semibold mb-2">No hay NFTs Listados</h3>
                   <p className="text-muted-foreground mb-6">
-                    List your NFTs for sale to start earning!
+                    ¡Lista tus NFTs para la venta y comienza a ganar!
                   </p>
                 </CardContent>
               </Card>

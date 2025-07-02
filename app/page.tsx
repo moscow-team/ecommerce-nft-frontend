@@ -9,11 +9,9 @@ import { Badge } from '@/components/ui/badge';
 import { NFTCard } from '@/components/NFTCard';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { useNFTs } from '@/hooks/useNFTs';
-import { useI18n } from '@/hooks/useI18n';
 
 export default function HomePage() {
   const { nfts, loading } = useNFTs();
-  const { t } = useI18n();
 
   const listedNFTs = nfts.filter(nft => nft.isListed);
   const featuredNFTs = listedNFTs.slice(0, 3);
@@ -27,17 +25,17 @@ export default function HomePage() {
         className="text-center py-12 px-4"
       >
         <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-primary via-purple-500 to-primary bg-clip-text text-transparent mb-6">
-          {t('home.title', 'NFT Marketplace')}
+          Moscow NFTs
         </h1>
         <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-          {t('home.subtitle', 'Discover, collect, and sell extraordinary NFTs on the Polygon network')}
+          Descubre, colecciona y vende NFTs extraordinarios en la red Polygon
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Button size="lg" className="px-8">
-            Explore NFTs
+            Explorar NFTs
           </Button>
           <Button size="lg" variant="outline" className="px-8">
-            Create NFT
+            Crear NFT
           </Button>
         </div>
       </motion.section>
@@ -52,13 +50,13 @@ export default function HomePage() {
         <Card>
           <CardContent className="p-6 text-center">
             <div className="text-3xl font-bold text-primary mb-2">{nfts.length}</div>
-            <div className="text-muted-foreground">Total NFTs</div>
+            <div className="text-muted-foreground">Total de NFTs</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-6 text-center">
             <div className="text-3xl font-bold text-primary mb-2">{listedNFTs.length}</div>
-            <div className="text-muted-foreground">Listed for Sale</div>
+            <div className="text-muted-foreground">En Venta</div>
           </CardContent>
         </Card>
         <Card>
@@ -66,7 +64,7 @@ export default function HomePage() {
             <div className="text-3xl font-bold text-primary mb-2">
               {new Set(nfts.map(nft => nft.owner)).size}
             </div>
-            <div className="text-muted-foreground">Active Collectors</div>
+            <div className="text-muted-foreground">Coleccionistas Activos</div>
           </CardContent>
         </Card>
       </motion.section>
@@ -80,8 +78,8 @@ export default function HomePage() {
           className="mb-12"
         >
           <div className="flex items-center gap-2 mb-6">
-            <h2 className="text-2xl font-bold">Featured NFTs</h2>
-            <Badge variant="secondary">Hot</Badge>
+            <h2 className="text-2xl font-bold">NFTs Destacados</h2>
+            <Badge variant="secondary">Populares</Badge>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {featuredNFTs.map((nft) => (
@@ -102,7 +100,7 @@ export default function HomePage() {
           <div className="relative flex-1 sm:w-80">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input
-              placeholder="Search NFTs..."
+              placeholder="Buscar NFTs..."
               className="pl-10"
             />
           </div>
@@ -127,7 +125,7 @@ export default function HomePage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4 }}
       >
-        <h2 className="text-2xl font-bold mb-6">All NFTs</h2>
+        <h2 className="text-2xl font-bold mb-6">Todos los NFTs</h2>
         
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -151,11 +149,11 @@ export default function HomePage() {
           <Card className="p-12 text-center">
             <CardContent>
               <div className="text-6xl mb-4">🎨</div>
-              <h3 className="text-xl font-semibold mb-2">No NFTs Found</h3>
+              <h3 className="text-xl font-semibold mb-2">No se encontraron NFTs</h3>
               <p className="text-muted-foreground mb-6">
-                Be the first to mint an NFT in this marketplace!
+                ¡Sé el primero en crear un NFT en este mercado!
               </p>
-              <Button>Create Your First NFT</Button>
+              <Button>Crea tu primer NFT</Button>
             </CardContent>
           </Card>
         )}

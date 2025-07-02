@@ -14,7 +14,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { useIPFS } from '@/hooks/useIPFS';
 import { useMarketplace } from '@/hooks/useMarketplace';
-import { useI18n } from '@/hooks/useI18n';
 import api from '@/lib/axios';
 import { UploadProgress } from '@/types';
 
@@ -23,7 +22,6 @@ export default function CreatePage() {
   const { address, isConnected } = useAccount();
   const { uploadFile, uploadMetadata, uploading } = useIPFS();
   const { listNFT } = useMarketplace();
-  const { t } = useI18n();
 
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>('');
@@ -62,12 +60,12 @@ export default function CreatePage() {
 
   const handleCreate = async () => {
     if (!isConnected || !address) {
-      toast.error('Please connect your wallet');
+      toast.error('Por favor conecta tu billetera');
       return;
     }
 
     if (!file || !name || !description || !price) {
-      toast.error('Please fill in all fields');
+      toast.error('Por favor completa todos los campos');
       return;
     }
 
@@ -76,7 +74,7 @@ export default function CreatePage() {
 
     try {
       // Step 1: Upload to IPFS
-      toast.info('Uploading to IPFS...');
+      toast.info('Subiendo a IPFS...');
       const imageUrl = await uploadFile(file);
       
       const metadata = {
@@ -88,10 +86,10 @@ export default function CreatePage() {
       
       const metadataUrl = await uploadMetadata(metadata);
       setProgress(prev => ({ ...prev, ipfs: true }));
-      toast.success('✅ Uploaded to IPFS');
+      toast.success('✅ Subido a IPFS');
 
       // Step 2: Mint NFT
-      toast.info('Minting NFT...');
+      toast.info('Creando NFT...');
       const mintResponse = await api.post('/api/nfts/mint', {
         to: address,
         tokenURI: metadataUrl,
@@ -99,13 +97,13 @@ export default function CreatePage() {
       
       const tokenId = mintResponse.data.tokenId;
       setProgress(prev => ({ ...prev, mint: true }));
-      toast.success(t('success.minted'));
+      toast.success('NFT creado exitosamente!');
 
       // Step 3: List NFT
-      toast.info('Listing NFT for sale...');
+      toast.info('Listando NFT para la venta...');
       await listNFT(tokenId, price);
       setProgress(prev => ({ ...prev, list: true }));
-      toast.success(t('success.listed'));
+      toast.success('NFT listado exitosamente!');
 
       // Redirect after success
       setTimeout(() => {
@@ -114,7 +112,7 @@ export default function CreatePage() {
 
     } catch (error: any) {
       console.error('Error creating NFT:', error);
-      toast.error(error.message || 'Failed to create NFT');
+      toast.error(error.message || 'Error al crear NFT');
     } finally {
       setIsCreating(false);
     }
@@ -126,9 +124,9 @@ export default function CreatePage() {
         <Card>
           <CardContent className="p-8">
             <div className="text-6xl mb-4">🔒</div>
-            <h2 className="text-2xl font-bold mb-4">Connect Your Wallet</h2>
+            <h2 className="text-2xl font-bold mb-4">Conecta tu Billetera</h2>
             <p className="text-muted-foreground mb-6">
-              You need to connect your wallet to create and mint NFTs.
+              Necesitas conectar tu billetera para crear y acuñar NFTs.
             </p>
           </CardContent>
         </Card>
@@ -145,21 +143,21 @@ export default function CreatePage() {
       >
         <div className="text-center">
           <h1 className="text-3xl font-bold mb-4">
-            {t('create.title', 'Create NFT')}
+            Crear NFT
           </h1>
           <p className="text-muted-foreground">
-            Upload your artwork and create a unique NFT
+            Sube tu obra de arte y crea un NFT único
           </p>
         </div>
 
         <Card>
           <CardHeader>
-            <CardTitle>NFT Details</CardTitle>
+            <CardTitle>Detalles del NFT</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             {/* File Upload */}
             <div className="space-y-2">
-              <Label>{t('create.upload', 'Upload Image')}</Label>
+              <Label>Subir Imagen</Label>
               <div
                 className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-primary transition-colors cursor-pointer"
                 onDragOver={handleDragOver}
@@ -182,15 +180,15 @@ export default function CreatePage() {
                         document.getElementById('file-input')?.click();
                       }}
                     >
-                      Change Image
+                      Cambiar Imagen
                     </Button>
                   </div>
                 ) : (
                   <div className="py-8">
                     <Upload className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-                    <p className="text-lg mb-2">Drop your image here</p>
+                    <p className="text-lg mb-2">Arrastra tu imagen aquí</p>
                     <p className="text-sm text-muted-foreground">
-                      or click to browse (PNG, JPG, GIF up to 10MB)
+                      o haz clic para navegar (PNG, JPG, GIF hasta 10MB)
                     </p>
                   </div>
                 )}
@@ -207,20 +205,20 @@ export default function CreatePage() {
             {/* NFT Information */}
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="name">{t('create.name', 'Name')}</Label>
+                <Label htmlFor="name">Nombre</Label>
                 <Input
                   id="name"
-                  placeholder="Enter NFT name"
+                  placeholder="Ingresa el nombre del NFT"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="description">{t('create.description', 'Description')}</Label>
+                <Label htmlFor="description">Descripción</Label>
                 <Textarea
                   id="description"
-                  placeholder="Describe your NFT"
+                  placeholder="Describe tu NFT"
                   rows={4}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
@@ -228,7 +226,7 @@ export default function CreatePage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="price">{t('create.price', 'Price (DIP)')}</Label>
+                <Label htmlFor="price">Precio (DIP)</Label>
                 <Input
                   id="price"
                   type="number"
@@ -244,7 +242,7 @@ export default function CreatePage() {
             {/* Progress Indicators */}
             {isCreating && (
               <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
-                <h3 className="font-semibold">Creation Progress</h3>
+                <h3 className="font-semibold">Progreso de Creación</h3>
                 <div className="space-y-3">
                   <div className="flex items-center gap-3">
                     {progress.ipfs ? (
@@ -255,7 +253,7 @@ export default function CreatePage() {
                       <div className="h-5 w-5 rounded-full border-2 border-gray-300" />
                     )}
                     <span className={progress.ipfs ? 'text-green-600' : ''}>
-                      Upload to IPFS
+                      Subir a IPFS
                     </span>
                   </div>
                   
@@ -268,7 +266,7 @@ export default function CreatePage() {
                       <div className="h-5 w-5 rounded-full border-2 border-gray-300" />
                     )}
                     <span className={progress.mint ? 'text-green-600' : ''}>
-                      Mint NFT
+                      Crear NFT
                     </span>
                   </div>
                   
@@ -281,7 +279,7 @@ export default function CreatePage() {
                       <div className="h-5 w-5 rounded-full border-2 border-gray-300" />
                     )}
                     <span className={progress.list ? 'text-green-600' : ''}>
-                      List for Sale
+                      Listar para Venta
                     </span>
                   </div>
                 </div>
@@ -297,12 +295,12 @@ export default function CreatePage() {
               {isCreating ? (
                 <>
                   <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                  Creating NFT...
+                  Creando NFT...
                 </>
               ) : (
                 <>
                   <ImageIcon className="h-5 w-5 mr-2" />
-                  {t('create.mint', 'Mint & List NFT')}
+                  Crear y Listar NFT
                 </>
               )}
             </Button>

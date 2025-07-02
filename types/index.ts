@@ -37,10 +37,6 @@ export interface NFTMetadata {
   attributes?: MetadataAttribute[];
 }
 
-export interface I18nTexts {
-  [key: string]: string;
-}
-
 export interface UploadProgress {
   ipfs: boolean;
   mint: boolean;

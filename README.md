@@ -1,27 +1,26 @@
-# NFT Marketplace Frontend
+# Moscow NFTs Frontend
 
-A modern, production-ready NFT marketplace built with Next.js 15, Web3 integration, and the Polygon Amoy network. Users can mint, list, and trade NFTs using DIP tokens.
+Un Moscow NFTs moderno y listo para producción construido con Next.js 15, integración Web3 y la red Polygon Amoy. Los usuarios pueden crear, listar e intercambiar NFTs utilizando tokens DIP.
 
-## ✨ Features
+## ✨ Características
 
-- **🎨 NFT Minting**: Create unique NFTs with IPFS metadata storage
-- **🏪 Marketplace**: List and purchase NFTs with DIP token payments
-- **💳 Wallet Integration**: Connect wallets via RainbowKit with multi-provider support
-- **📱 Responsive Design**: Mobile-first design with beautiful animations
-- **🌐 Internationalization**: Cookie-based language detection with backend i18n API
-- **⚡ Real-time Updates**: Live NFT catalog with pricing and availability
-- **💰 Earnings Management**: Track sales and withdraw funds seamlessly
+- **🎨 Creación de NFTs**: Crea NFTs únicos con almacenamiento de metadatos en IPFS
+- **🏪 Mercado**: Lista y compra NFTs con pagos en tokens DIP
+- **💳 Integración de Billeteras**: Conecta billeteras a través de RainbowKit con soporte multi-proveedor
+- **📱 Diseño Responsivo**: Diseño mobile-first con hermosas animaciones
+- **⚡ Actualizaciones en Tiempo Real**: Catálogo de NFTs en vivo con precios y disponibilidad
+- **💰 Gestión de Ganancias**: Rastrea las ventas y retira fondos sin problemas
 
-## 🛠 Tech Stack
+## 🛠 Stack Tecnológico
 
 - **Framework**: Next.js 15 (App Router)
-- **Language**: TypeScript
-- **Styling**: TailwindCSS + shadcn/ui
+- **Lenguaje**: TypeScript
+- **Estilos**: TailwindCSS + shadcn/ui
 - **Web3**: wagmi + viem + RainbowKit
-- **State Management**: Zustand
-- **Animations**: Framer Motion
-- **Storage**: IPFS via web3.storage
-- **Network**: Polygon Amoy (chainId: 80002)
+- **Gestión de Estado**: Zustand
+- **Animaciones**: Framer Motion
+- **Almacenamiento**: IPFS vía web3.storage
+- **Red**: Polygon Amoy (chainId: 80002)
 
 ## 🚀 Quick Start
 
@@ -51,51 +50,49 @@ NEXT_PUBLIC_WEB3_STORAGE_TOKEN=your_web3_storage_token
 NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID=your_walletconnect_id
 ```
 
-3. **Start Development Server**:
+3. **Iniciar Servidor de Desarrollo**:
 ```bash
 pnpm dev
 ```
 
-Visit `http://localhost:3000` to see the application.
+Visita `http://localhost:3000` para ver la aplicación.
 
-## 📁 Project Structure
+## 📁 Estructura del Proyecto
 
 ```
-├── app/                    # Next.js 15 App Router pages
-│   ├── (pages)/           # Route groups
-│   ├── globals.css        # Global styles
-│   └── layout.tsx         # Root layout
-├── components/            # Reusable components
-│   ├── ui/               # shadcn/ui components
-│   ├── Web3Provider.tsx  # Web3 configuration
-│   ├── Header.tsx        # Navigation header
-│   └── NFTCard.tsx       # NFT display component
+├── app/                    # Páginas de Next.js 15 App Router
+│   ├── (pages)/           # Grupos de rutas
+│   ├── globals.css        # Estilos globales
+│   └── layout.tsx         # Layout raíz
+├── components/            # Componentes reutilizables
+│   ├── ui/               # Componentes shadcn/ui
+│   ├── Web3Provider.tsx  # Configuración Web3
+│   ├── Header.tsx        # Header de navegación
+│   └── NFTCard.tsx       # Componente de visualización NFT
 ├── hooks/                # Custom React hooks
-│   ├── useMarketplace.ts # Marketplace interactions
-│   ├── useIPFS.ts        # IPFS operations
-│   └── useI18n.ts        # Internationalization
-├── lib/                  # Utility libraries
-│   ├── contracts.ts      # Contract ABIs and addresses
-│   └── axios.ts          # API client configuration
-├── store/                # Zustand state management
-├── types/                # TypeScript type definitions
+│   ├── useMarketplace.ts # Interacciones del mercado
+│   └── useIPFS.ts        # Operaciones IPFS
+├── lib/                  # Librerías de utilidad
+│   ├── contracts.ts      # ABIs y direcciones de contratos
+│   └── axios.ts          # Configuración del cliente API
+├── store/                # Gestión de estado Zustand
+├── types/                # Definiciones de tipos TypeScript
 └── README.md
 ```
 
-## 🔗 API Integration
+## 🔗 Integración API
 
-The frontend consumes REST APIs from your existing backend:
+El frontend consume APIs REST de tu backend existente:
 
-- `GET /api/i18n` - Internationalization texts
-- `POST /api/nfts/mint` - Mint new NFT
-- `POST /api/market/list` - List NFT for sale
-- `POST /api/market/withdraw` - Withdraw earnings
-- `GET /api/market/listing/:id` - Get listing details
-- `GET /api/nfts/user/:address` - Get user's NFTs
+- `POST /api/nfts/mint` - Crear nuevo NFT
+- `POST /api/market/list` - Listar NFT para la venta
+- `POST /api/market/withdraw` - Retirar ganancias
+- `GET /api/market/listing/:id` - Obtener detalles del listado
+- `GET /api/nfts/user/:address` - Obtener NFTs del usuario
 
-## 🌊 Web3 Integration
+## 🌊 Integración Web3
 
-### Supported Wallets
+### Billeteras Soportadas
 - MetaMask
 - WalletConnect
 - Coinbase Wallet

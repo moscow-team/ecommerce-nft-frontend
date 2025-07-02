@@ -10,7 +10,6 @@ import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { NFT } from '@/types';
-import { useI18n } from '@/hooks/useI18n';
 import { cn } from '@/lib/utils';
 
 interface NFTCardProps {
@@ -21,7 +20,6 @@ interface NFTCardProps {
 
 export const NFTCard = ({ nft, showActions = true, className }: NFTCardProps) => {
   const [imageLoading, setImageLoading] = useState(true);
-  const { t } = useI18n();
 
   const price = nft.price && nft.price !== '0' ? formatEther(BigInt(nft.price)) : null;
 
@@ -54,11 +52,11 @@ export const NFTCard = ({ nft, showActions = true, className }: NFTCardProps) =>
           <div className="absolute top-3 right-3">
             {nft.isListed ? (
               <Badge variant="default" className="bg-green-500 text-white">
-                For Sale
+                En Venta
               </Badge>
             ) : (
               <Badge variant="secondary">
-                {t('nft.not_listed', 'Not Listed')}
+                No Listado
               </Badge>
             )}
           </div>
@@ -69,14 +67,14 @@ export const NFTCard = ({ nft, showActions = true, className }: NFTCardProps) =>
               <Button size="sm" variant="secondary" asChild>
                 <Link href={`/nft/${nft.tokenId}`}>
                   <Eye className="h-4 w-4 mr-1" />
-                  View
+                  Ver
                 </Link>
               </Button>
               {nft.isListed && price && (
                 <Button size="sm" asChild>
                   <Link href={`/buy/${nft.tokenId}`}>
                     <ShoppingCart className="h-4 w-4 mr-1" />
-                    Buy
+                    Comprar
                   </Link>
                 </Button>
               )}
@@ -93,7 +91,7 @@ export const NFTCard = ({ nft, showActions = true, className }: NFTCardProps) =>
           {price && (
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">
-                {t('nft.price', 'Price')}
+                Precio
               </span>
               <span className="font-semibold text-lg text-primary">
                 {price} DIP
@@ -108,12 +106,12 @@ export const NFTCard = ({ nft, showActions = true, className }: NFTCardProps) =>
               <Button asChild className="w-full">
                 <Link href={`/buy/${nft.tokenId}`}>
                   <ShoppingCart className="h-4 w-4 mr-2" />
-                  {t('nft.buy', 'Buy Now')}
+                  Comprar Ahora
                 </Link>
               </Button>
             ) : (
               <Button variant="outline" disabled className="w-full">
-                {t('nft.not_listed', 'Not Listed')}
+                No Listado
               </Button>
             )}
           </CardFooter>

@@ -4,12 +4,10 @@ import { parseEther } from 'viem';
 import { toast } from 'sonner';
 import api from '@/lib/axios';
 import { CONTRACTS, ERC20_ABI, MARKETPLACE_ABI } from '@/lib/contracts';
-import { useI18n } from './useI18n';
 
 export const useMarketplace = () => {
   const { address } = useAccount();
   const { writeContract, data: hash, isPending } = useWriteContract();
-  const { t } = useI18n();
 
   const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
     hash,
@@ -22,24 +20,24 @@ export const useMarketplace = () => {
         price: parseEther(price).toString(),
       });
       
-      toast.success(t('success.listed'));
+      toast.success('NFT listado exitosamente!');
       return response.data;
     } catch (error) {
       console.error('Error listing NFT:', error);
-      toast.error('Failed to list NFT');
+      toast.error('Error al listar NFT');
       throw error;
     }
-  }, [t]);
+  }, []);
 
   const buyNFT = useCallback(async (tokenId: number, price: string) => {
     if (!address) {
-      toast.error('Please connect your wallet');
+      toast.error('Por favor conecta tu billetera');
       return;
     }
 
     try {
       // Step 1: Approve DIP token spending
-      toast.info('Approving DIP token...');
+      toast.info('Aprobando token DIP...');
       
       const approveHash = await writeContract({
         address: CONTRACTS.DIP_ADDRESS,
@@ -49,13 +47,13 @@ export const useMarketplace = () => {
       });
 
       // Wait for approval confirmation
-      toast.info('Waiting for approval confirmation...');
+      toast.info('Esperando confirmación de aprobación...');
       
       // Wait a bit for the approval transaction
       await new Promise(resolve => setTimeout(resolve, 3000));
 
       // Step 2: Buy the NFT
-      toast.info('Purchasing NFT...');
+      toast.info('Comprando NFT...');
       
       const buyHash = await writeContract({
         address: CONTRACTS.MARKET_ADDRESS,
@@ -64,23 +62,23 @@ export const useMarketplace = () => {
         args: [BigInt(tokenId)],
       });
 
-      toast.success(t('success.bought'));
+      toast.success('NFT comprado exitosamente!');
       return { approveHash, buyHash };
     } catch (error: any) {
       console.error('Error buying NFT:', error);
-      toast.error(error.message || 'Failed to purchase NFT');
+      toast.error(error.message || 'Error al comprar NFT');
       throw error;
     }
-  }, [address, writeContract, t]);
+  }, [address, writeContract]);
 
   const withdraw = useCallback(async () => {
     try {
       const response = await api.post('/api/market/withdraw');
-      toast.success('Funds withdrawn successfully!');
+      toast.success('¡Fondos retirados exitosamente!');
       return response.data;
     } catch (error) {
       console.error('Error withdrawing funds:', error);
-      toast.error('Failed to withdraw funds');
+      toast.error('Error al retirar fondos');
       throw error;
     }
   }, []);

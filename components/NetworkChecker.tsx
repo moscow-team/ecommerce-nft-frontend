@@ -12,14 +12,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { useI18n } from '@/hooks/useI18n';
 
 export const NetworkChecker = () => {
   const { isConnected } = useAccount();
   const chainId = useChainId();
   const { switchChain } = useSwitchChain();
   const [showModal, setShowModal] = useState(false);
-  const { t } = useI18n();
 
   useEffect(() => {
     if (isConnected && chainId !== polygonAmoy.id) {
@@ -39,21 +37,21 @@ export const NetworkChecker = () => {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <AlertTriangle className="h-5 w-5 text-orange-500" />
-            Wrong Network
+            Red Incorrecta
           </DialogTitle>
           <DialogDescription>
-            {t('error.network', 'Please switch to Polygon Amoy network to use this application.')}
+            Por favor cambia a la red Polygon Amoy para usar esta aplicación.
           </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-4">
           <div className="flex items-center gap-2 p-4 bg-orange-50 rounded-lg border border-orange-200">
             <Network className="h-4 w-4 text-orange-600" />
             <span className="text-sm text-orange-800">
-              Current: {chainId} | Required: Polygon Amoy ({polygonAmoy.id})
+              Actual: {chainId} | Requerida: Polygon Amoy ({polygonAmoy.id})
             </span>
           </div>
           <Button onClick={handleSwitchNetwork} className="w-full">
-            Switch to Polygon Amoy
+            Cambiar a Polygon Amoy
           </Button>
         </div>
       </DialogContent>
