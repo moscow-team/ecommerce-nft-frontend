@@ -22,24 +22,25 @@ export default function MyNFTsPage() {
   const { withdraw } = useMarketplace();
   const [pendingWithdrawals, setPendingWithdrawals] = useState('0');
   const [isWithdrawing, setIsWithdrawing] = useState(false);
+  const loadPendingWithdrawals = async () => {
+    // if (!address) return;
 
+    // try {
+    //   const response = await api.get(`/api/market/withdrawals/${address}`);
+    //   setPendingWithdrawals(response.data.amount || '0');
+    // } catch (error) {
+    //   console.error('Error loading pending withdrawals:', error);
+    // }
+    await loadUserNFTs();
+  };
   useEffect(() => {
-    const loadPendingWithdrawals = async () => {
-      if (!address) return;
-      
-      try {
-        const response = await api.get(`/api/market/withdrawals/${address}`);
-        setPendingWithdrawals(response.data.amount || '0');
-      } catch (error) {
-        console.error('Error loading pending withdrawals:', error);
-      }
-    };
+
 
     if (isConnected && address) {
-      loadUserNFTs();
       loadPendingWithdrawals();
+      // loadPendingWithdrawals();
     }
-  }, [isConnected, address, loadUserNFTs]);
+  }, [isConnected, address]);
 
   const handleWithdraw = async () => {
     setIsWithdrawing(true);
@@ -88,7 +89,7 @@ export default function MyNFTsPage() {
             Gestiona tu colección de NFTs y ganancias
           </p>
         </div>
-        
+
         <Button asChild>
           <Link href="/create">
             <Plus className="h-4 w-4 mr-2" />
@@ -168,7 +169,7 @@ export default function MyNFTsPage() {
             <TabsTrigger value="owned">NFTs Propios ({ownedNFTs.length})</TabsTrigger>
             <TabsTrigger value="listed">Listados ({listedNFTs.length})</TabsTrigger>
           </TabsList>
-          
+
           <TabsContent value="owned" className="mt-6">
             {loading ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -203,7 +204,7 @@ export default function MyNFTsPage() {
               </Card>
             )}
           </TabsContent>
-          
+
           <TabsContent value="listed" className="mt-6">
             {listedNFTs.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">

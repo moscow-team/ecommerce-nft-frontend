@@ -19,7 +19,7 @@ Un Moscow NFTs moderno y listo para producción construido con Next.js 15, integ
 - **Web3**: wagmi + viem + RainbowKit
 - **Gestión de Estado**: Zustand
 - **Animaciones**: Framer Motion
-- **Almacenamiento**: IPFS vía web3.storage
+- **Almacenamiento**: IPFS vía @web3-storage/w3up-client
 - **Red**: Polygon Amoy (chainId: 80002)
 
 ## 🚀 Quick Start
@@ -27,7 +27,7 @@ Un Moscow NFTs moderno y listo para producción construido con Next.js 15, integ
 ### Prerequisites
 
 - Node.js 18+ and pnpm
-- Web3.storage API key
+- Web3.Storage authentication setup (ver IPFS_SETUP.md)
 - Polygon Amoy testnet setup
 
 ### Installation

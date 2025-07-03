@@ -5,12 +5,11 @@ import { WagmiProvider } from 'wagmi';
 import { RainbowKitProvider, darkTheme, lightTheme } from '@rainbow-me/rainbowkit';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { getDefaultConfig } from '@rainbow-me/rainbowkit';
-import { polygonAmoy } from 'wagmi/chains';
+import { polygonAmoy, localhost } from 'wagmi/chains';
 import { useTheme } from 'next-themes';
 
 import '@rainbow-me/rainbowkit/styles.css';
 
-// Ensure we have a valid WalletConnect Project ID
 const projectId = process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID;
 
 if (!projectId || projectId === 'demo') {
@@ -21,10 +20,26 @@ if (!projectId || projectId === 'demo') {
   );
 }
 
+const chains = [{
+  id: 31337, // Localhost chain ID
+  name: 'Localhost',
+  nativeCurrency: {
+    name: 'Ether',
+    symbol: 'ETH',
+    decimals: 18,
+  },
+  rpcUrls: {
+    default: { http: ['http://localhost:8545'] }, // Localhost RPC URL
+  },
+  blockExplorers: {
+    default: { name: 'Localhost Explorer', url: 'http://localhost:8545' },
+  },
+},]; // 👈 incluimos localhost
+
 const config = getDefaultConfig({
   appName: 'Moscow NFTs',
   projectId: projectId || 'demo',
-  chains: [polygonAmoy],
+  chains,
   ssr: true,
 });
 
@@ -33,7 +48,7 @@ const queryClient = new QueryClient({
     queries: {
       retry: 1,
       refetchOnWindowFocus: false,
-      staleTime: 1000 * 60 * 5, // 5 minutes
+      staleTime: 1000 * 60 * 5,
     },
   },
 });
@@ -44,11 +59,11 @@ interface Web3ProviderProps {
 
 function RainbowKitWrapper({ children }: { children: ReactNode }) {
   const { theme } = useTheme();
-  
+
   return (
     <RainbowKitProvider
       modalSize="compact"
-      initialChain={polygonAmoy}
+      initialChain={localhost} // 👈 puede ser polygonAmoy o localhost según contexto
       theme={theme === 'dark' ? darkTheme() : lightTheme()}
       showRecentTransactions={true}
     >

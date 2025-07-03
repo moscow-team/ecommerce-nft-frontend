@@ -22,13 +22,12 @@ export const metadata: Metadata = {
     description: 'Discover, collect, and sell extraordinary NFTs',
     type: 'website',
   },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'Moscow NFTs',
-    description: 'Discover, collect, and sell extraordinary NFTs',
-  },
-  viewport: 'width=device-width, initial-scale=1',
   robots: 'index, follow',
+};
+
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
 };
 
 export default function RootLayout({

@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAccount } from 'wagmi';
+import { useAccount, useWalletClient } from 'wagmi';
 import { motion } from 'framer-motion';
 import { Upload, Image as ImageIcon, Loader2, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
@@ -16,13 +16,15 @@ import { useIPFS } from '@/hooks/useIPFS';
 import { useMarketplace } from '@/hooks/useMarketplace';
 import api from '@/lib/axios';
 import { UploadProgress } from '@/types';
+import { ethers } from 'ethers';
+import { CONTRACTS, ERC20_ABI, ERC721_ABI } from '@/lib/contracts';
 
 export default function CreatePage() {
   const router = useRouter();
-  const { address, isConnected } = useAccount();
+  const { address, isConnected, } = useAccount();
   const { uploadFile, uploadMetadata, uploading } = useIPFS();
+  const { data: walletClient } = useWalletClient();
   const { listNFT } = useMarketplace();
-
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>('');
   const [name, setName] = useState('');
@@ -75,27 +77,45 @@ export default function CreatePage() {
     try {
       // Step 1: Upload to IPFS
       toast.info('Subiendo a IPFS...');
-      const imageUrl = await uploadFile(file);
-      
+      // const imageUrl = await uploadFile(file);
+
       const metadata = {
-        name,
-        description,
-        image: imageUrl,
+        name: "NFT de prueba",
+        description: "Este es un NFT de prueba mockeado",
+        image: "https://cdn.outsideonline.com/wp-content/uploads/2023/03/Funny_Dog_H.jpg?crop=16:9&width=960&enable=upscale&quality=100",
         attributes: []
-      };
-      
-      const metadataUrl = await uploadMetadata(metadata);
+      }
+
+      // const metadataUrl = await uploadMetadata(metadata);
       setProgress(prev => ({ ...prev, ipfs: true }));
       toast.success('✅ Subido a IPFS');
 
       // Step 2: Mint NFT
       toast.info('Creando NFT...');
-      const mintResponse = await api.post('/api/nfts/mint', {
-        to: address,
-        tokenURI: metadataUrl,
-      });
-      
-      const tokenId = mintResponse.data.tokenId;
+
+      // const mintResponse = await api.post('/api/nfts/mint', {
+      //   to: address,
+      //   tokenURI:metadata.image
+      // });
+
+
+      if (!walletClient) {
+        toast.error("No se pudo obtener el signer");
+        return;
+      }
+
+      const provider = new ethers.BrowserProvider(walletClient.transport);
+      const signer = await provider.getSigner();
+
+      const nftContract = new ethers.Contract(CONTRACTS.NFT_ADDRESS, ERC721_ABI, signer);
+      console.log(nftContract)
+      const tx = await nftContract.mint(address, metadata.image);
+      const receipt = await tx.wait(); 
+
+      // const tokenId = mintResponse.data.tokenId;
+      const tokenId = receipt.events?.[0].args?.tokenId.toNumber() || 0;
+
+
       setProgress(prev => ({ ...prev, mint: true }));
       toast.success('NFT creado exitosamente!');
 
@@ -256,7 +276,7 @@ export default function CreatePage() {
                       Subir a IPFS
                     </span>
                   </div>
-                  
+
                   <div className="flex items-center gap-3">
                     {progress.mint ? (
                       <CheckCircle className="h-5 w-5 text-green-500" />
@@ -269,7 +289,7 @@ export default function CreatePage() {
                       Crear NFT
                     </span>
                   </div>
-                  
+
                   <div className="flex items-center gap-3">
                     {progress.list ? (
                       <CheckCircle className="h-5 w-5 text-green-500" />

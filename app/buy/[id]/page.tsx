@@ -94,7 +94,7 @@ export default function BuyNFTPage({ params }: BuyNFTPageProps) {
 
     const price = nft.price;
     const priceInWei = BigInt(price);
-    const userBalance = dipBalance || 0n;
+    const userBalance = dipBalance || 0;
 
     if (userBalance < priceInWei) {
       toast.error('Saldo insuficiente de DIP');

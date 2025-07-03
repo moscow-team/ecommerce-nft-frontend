@@ -1,48 +1,109 @@
 import { useCallback, useState } from 'react';
-import { Web3Storage } from 'web3.storage';
+import * as Client from '@web3-storage/w3up-client';
 import { NFTMetadata } from '@/types';
-
-const WEB3_STORAGE_TOKEN = process.env.NEXT_PUBLIC_WEB3_STORAGE_TOKEN || '';
 
 export const useIPFS = () => {
   const [uploading, setUploading] = useState(false);
+  const [client, setClient] = useState<Client.Client | null>(null);
 
-  const client = new Web3Storage({ token: WEB3_STORAGE_TOKEN });
+  // Initialize client with authentication
+  const initializeClient = useCallback(async () => {
+    if (!client) {
+      try {
+        const newClient = await Client.create();
+        
+        // Check if client has a current space
+        if (!newClient.currentSpace()) {
+          // For development, you'll need to handle authentication
+          // This is a placeholder - in production you'd want proper auth flow
+          console.warn('Client not authenticated. Please set up authentication.');
+        }
+        
+        setClient(newClient);
+        return newClient;
+      } catch (error) {
+        console.error('Failed to initialize w3up client:', error);
+        throw new Error('Failed to initialize IPFS client');
+      }
+    }
+    return client;
+  }, [client]);
 
   const uploadFile = useCallback(async (file: File): Promise<string> => {
     setUploading(true);
     try {
-      const cid = await client.put([file], {
-        name: `nft-image-${Date.now()}`,
-        maxRetries: 3,
-      });
-      return `https://${cid}.ipfs.w3s.link/${file.name}`;
+      const clientInstance = await initializeClient();
+      
+      // Upload file using the new w3up-client API
+      const cid = await clientInstance.uploadFile(file);
+      
+      // Return the IPFS gateway URL
+      return `https://${cid.toString()}.ipfs.w3s.link/${file.name}`;
     } catch (error) {
       console.error('Error uploading file to IPFS:', error);
-      throw new Error('Failed to upload file to IPFS');
+      // Fallback to a more basic error message
+      throw new Error('Failed to upload file to IPFS. Please check your authentication.');
     } finally {
       setUploading(false);
     }
-  }, [client]);
+  }, [initializeClient]);
 
-  const uploadMetadata = useCallback(async (metadata: NFTMetadata): Promise<string> => {
+  // const uploadMetadata = useCallback(async (metadata: NFTMetadata): Promise<string> => {
+  //   setUploading(true);
+  //   try {
+  //     const clientInstance = await initializeClient();
+      
+  //     // Create a JSON file from metadata
+  //     const blob = new Blob([JSON.stringify(metadata, null, 2)], { 
+  //       type: 'application/json' 
+  //     });
+  //     const file = new File([blob], 'metadata.json', { 
+  //       type: 'application/json' 
+  //     });
+      
+  //     // Upload metadata file
+  //     const cid = await clientInstance.uploadFile(file);
+      
+  //     // Return the IPFS gateway URL
+  //     return `https://${cid.toString()}.ipfs.w3s.link/metadata.json`;
+  //   } catch (error) {
+  //     console.error('Error uploading metadata to IPFS:', error);
+  //     throw new Error('Failed to upload metadata to IPFS. Please check your authentication.');
+  //   } finally {
+  //     setUploading(false);
+  //   }
+  // }, [initializeClient]);
+
+  const uploadMetadata = (async (metadata: NFTMetadata): Promise<string> => {
     setUploading(true);
     try {
-      const blob = new Blob([JSON.stringify(metadata)], { type: 'application/json' });
-      const file = new File([blob], 'metadata.json');
-      
-      const cid = await client.put([file], {
-        name: `nft-metadata-${Date.now()}`,
-        maxRetries: 3,
+      // Create a JSON file from metadata
+      const blob = new Blob([JSON.stringify(metadata, null, 2)], { 
+        type: 'application/json' 
       });
-      return `https://${cid}.ipfs.w3s.link/metadata.json`;
+      const file = new File([blob], 'metadata.json', { 
+        type: 'application/json' 
+      });
+      
+      // // Upload metadata file
+      // const cid = await clientInstance.uploadFile(file);
+      
+      // Return the IPFS gateway URL
+      // return `https://${cid.toString()}.ipfs.w3s.link/metadata.json`;
+
+
+
+      
     } catch (error) {
       console.error('Error uploading metadata to IPFS:', error);
-      throw new Error('Failed to upload metadata to IPFS');
+      throw new Error('Failed to upload metadata to IPFS. Please check your authentication.');
     } finally {
       setUploading(false);
     }
-  }, [client]);
+  });
+
+
+
 
   const resolveCid = useCallback((cid: string): string => {
     if (cid.startsWith('http')) return cid;

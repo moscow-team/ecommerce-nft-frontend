@@ -19,13 +19,13 @@ export const NetworkChecker = () => {
   const { switchChain } = useSwitchChain();
   const [showModal, setShowModal] = useState(false);
 
-  useEffect(() => {
-    if (isConnected && chainId !== polygonAmoy.id) {
-      setShowModal(true);
-    } else {
-      setShowModal(false);
-    }
-  }, [isConnected, chainId]);
+  // useEffect(() => {
+  //   if (isConnected && chainId !== polygonAmoy.id) {
+  //     setShowModal(true);
+  //   } else {
+  //     setShowModal(false);
+  //   }
+  // }, [isConnected, chainId]);
 
   const handleSwitchNetwork = () => {
     switchChain({ chainId: polygonAmoy.id });

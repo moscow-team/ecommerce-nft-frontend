@@ -15,13 +15,13 @@ export const useMarketplace = () => {
 
   const listNFT = useCallback(async (tokenId: number, price: string) => {
     try {
-      const response = await api.post('/api/market/list', {
-        tokenId,
-        price: parseEther(price).toString(),
-      });
+      // const response = await api.post('/api/market/list', {
+      //   tokenId,
+      //   price: parseEther(price).toString(),
+      // });
       
       toast.success('NFT listado exitosamente!');
-      return response.data;
+      return [];
     } catch (error) {
       console.error('Error listing NFT:', error);
       toast.error('Error al listar NFT');
