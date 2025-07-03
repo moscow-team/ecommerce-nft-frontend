@@ -1,35 +1,50 @@
 import { useCallback } from 'react';
-import { useWriteContract, useAccount, useWaitForTransactionReceipt } from 'wagmi';
+import { useWriteContract, useAccount, useWaitForTransactionReceipt, useWalletClient } from 'wagmi';
 import { parseEther } from 'viem';
 import { toast } from 'sonner';
 import api from '@/lib/axios';
 import { CONTRACTS, ERC20_ABI, MARKETPLACE_ABI } from '@/lib/contracts';
+import { ethers } from 'ethers';
 
 export const useMarketplace = () => {
   const { address } = useAccount();
   const { writeContract, data: hash, isPending } = useWriteContract();
+  const { data: walletClient } = useWalletClient();
 
   const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
     hash,
   });
 
   const listNFT = useCallback(async (tokenId: number, price: string) => {
-    try {
-      // const response = await api.post('/api/market/list', {
-      //   tokenId,
-      //   price: parseEther(price).toString(),
-      // });
-      
-      toast.success('NFT listado exitosamente!');
-      return [];
-    } catch (error) {
-      console.error('Error listing NFT:', error);
-      toast.error('Error al listar NFT');
-      throw error;
+  try {
+    if (!walletClient) {
+      toast.error("No se pudo obtener el signer");
+      return;
     }
-  }, []);
+
+    const provider = new ethers.BrowserProvider(walletClient.transport);
+    const signer = await provider.getSigner();
+
+    const marketPlaceContract = new ethers.Contract(CONTRACTS.MARKET_ADDRESS, MARKETPLACE_ABI, signer);
+    const parsedPrice = parseEther(price); // precio como "0.1" => bigint
+    console.log('Listing NFT with tokenId:', tokenId, 'and price:', parsedPrice.toString());
+    const tx = await marketPlaceContract.listItem(tokenId, parsedPrice);
+    await tx.wait();
+    console.log('NFT listed successfully:', tx.hash);
+
+    toast.success('✅ NFT listado exitosamente');
+    return tx.hash;
+  } catch (error) {
+    console.error('❌ Error listing NFT:', error);
+    toast.error('Error al listar NFT');
+    throw error;
+  }
+}, []);
+
 
   const buyNFT = useCallback(async (tokenId: number, price: string) => {
+    /**
+     * 
     if (!address) {
       toast.error('Por favor conecta tu billetera');
       return;
@@ -38,7 +53,7 @@ export const useMarketplace = () => {
     try {
       // Step 1: Approve DIP token spending
       toast.info('Aprobando token DIP...');
-      
+
       const approveHash = await writeContract({
         address: CONTRACTS.DIP_ADDRESS,
         abi: ERC20_ABI,
@@ -48,13 +63,13 @@ export const useMarketplace = () => {
 
       // Wait for approval confirmation
       toast.info('Esperando confirmación de aprobación...');
-      
+
       // Wait a bit for the approval transaction
       await new Promise(resolve => setTimeout(resolve, 3000));
 
       // Step 2: Buy the NFT
       toast.info('Comprando NFT...');
-      
+
       const buyHash = await writeContract({
         address: CONTRACTS.MARKET_ADDRESS,
         abi: MARKETPLACE_ABI,
@@ -69,6 +84,7 @@ export const useMarketplace = () => {
       toast.error(error.message || 'Error al comprar NFT');
       throw error;
     }
+      */
   }, [address, writeContract]);
 
   const withdraw = useCallback(async () => {

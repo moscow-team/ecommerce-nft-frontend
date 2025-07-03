@@ -82,9 +82,10 @@ export default function CreatePage() {
       const metadata = {
         name: "NFT de prueba",
         description: "Este es un NFT de prueba mockeado",
-        image: "https://cdn.outsideonline.com/wp-content/uploads/2023/03/Funny_Dog_H.jpg?crop=16:9&width=960&enable=upscale&quality=100",
+        image: "ipfs://QmFakeHash123456789", // 👈 o una URL a IPFS gateway como https://ipfs.io/ipfs/Qm...
         attributes: []
-      }
+      };
+
 
       // const metadataUrl = await uploadMetadata(metadata);
       setProgress(prev => ({ ...prev, ipfs: true }));
@@ -92,11 +93,6 @@ export default function CreatePage() {
 
       // Step 2: Mint NFT
       toast.info('Creando NFT...');
-
-      // const mintResponse = await api.post('/api/nfts/mint', {
-      //   to: address,
-      //   tokenURI:metadata.image
-      // });
 
 
       if (!walletClient) {
@@ -108,12 +104,20 @@ export default function CreatePage() {
       const signer = await provider.getSigner();
 
       const nftContract = new ethers.Contract(CONTRACTS.NFT_ADDRESS, ERC721_ABI, signer);
-      console.log(nftContract)
       const tx = await nftContract.mint(address, metadata.image);
-      const receipt = await tx.wait(); 
+      const receipt = await tx.wait();
+      const parsedLogs = receipt.logs
+        .map((log: any) => {
+          try {
+            return nftContract.interface.parseLog(log);
+          } catch (e) {
+            return null;
+          }
+        })
+        .filter(Boolean);
 
-      // const tokenId = mintResponse.data.tokenId;
-      const tokenId = receipt.events?.[0].args?.tokenId.toNumber() || 0;
+      const tokenId = parsedLogs.find((log: any) => log?.name === "NFTMinted")?.args?.tokenId?.toString();
+      console.log("✅ tokenId generado:", tokenId);
 
 
       setProgress(prev => ({ ...prev, mint: true }));
