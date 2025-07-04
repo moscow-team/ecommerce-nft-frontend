@@ -5,58 +5,54 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import AIImageGenerator from '@/components/ai-image-generator';
+import ImageUpload from '@/components/image-upload';
+import { motion } from 'framer-motion';
+import { CheckCircle, Image as ImageIcon, Loader2, Upload, Sparkles } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { toast } from 'sonner';
+import { CONTRACTS, ERC721_ABI } from '@/lib/contracts';
+import { ethers } from 'ethers';
+import { useAccount, useWalletClient } from 'wagmi';
 import { useIPFS } from '@/hooks/useIPFS';
 import { useMarketplace } from '@/hooks/useMarketplace';
-import { CONTRACTS, ERC721_ABI } from '@/lib/contracts';
 import { UploadProgress } from '@/types';
-import { ethers } from 'ethers';
-import { motion } from 'framer-motion';
-import { CheckCircle, Image as ImageIcon, Loader2, Upload } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { useCallback, useState } from 'react';
-import { toast } from 'sonner';
-import { useAccount, useWalletClient } from 'wagmi';
 
-export default function CreatePage() {
+export default function CreateNFTPage() {
   const router = useRouter();
-  const { address, isConnected, } = useAccount();
+  const { address, isConnected } = useAccount();
   const { uploadFile, uploadMetadata, uploading } = useIPFS();
-  const { data: walletClient } = useWalletClient();
   const { listNFT } = useMarketplace();
+  const { data: walletClient } = useWalletClient();
+  const [activeTab, setActiveTab] = useState('upload');
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>('');
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
   const [isCreating, setIsCreating] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
   const [progress, setProgress] = useState<UploadProgress>({
     ipfs: false,
     mint: false,
     list: false,
   });
 
-  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0];
-    if (selectedFile) {
-      setFile(selectedFile);
-      const url = URL.createObjectURL(selectedFile);
-      setPreviewUrl(url);
-    }
-  }, []);
+  const handleImageGenerated = (imageUrl: string, generatedFile: File) => {
+    setFile(generatedFile);
+    setPreviewUrl(imageUrl);
+    toast.success('Imagen generada y seleccionada');
+  };
 
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-  }, []);
+  const handleFileChange = (newFile: File | null) => {
+    setFile(newFile);
+  };
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    const droppedFile = e.dataTransfer.files[0];
-    if (droppedFile && droppedFile.type.startsWith('image/')) {
-      setFile(droppedFile);
-      const url = URL.createObjectURL(droppedFile);
-      setPreviewUrl(url);
-    }
-  }, []);
+  const handlePreviewChange = (url: string) => {
+    setPreviewUrl(url);
+  };
 
   const handleCreate = async () => {
     if (!isConnected || !address) {
@@ -149,7 +145,7 @@ export default function CreatePage() {
     }
   };
 
-  if (!isConnected) {
+  if (!isConnected || !address) {
     return (
       <div className="max-w-2xl mx-auto text-center py-12">
         <Card>
@@ -166,75 +162,58 @@ export default function CreatePage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="max-w-4xl mx-auto p-6">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="space-y-8"
       >
         <div className="text-center">
-          <h1 className="text-3xl font-bold mb-4">
+          <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
             Crear NFT
           </h1>
-          <p className="text-muted-foreground">
-            Sube tu obra de arte y crea un NFT único
+          <p className="text-muted-foreground text-lg">
+            Sube tu obra de arte o genera una imagen con IA para crear un NFT único
           </p>
         </div>
 
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="upload" className="flex items-center gap-2">
+              <Upload className="h-4 w-4" />
+              Subir Imagen
+            </TabsTrigger>
+            <TabsTrigger value="generate" className="flex items-center gap-2">
+              <Sparkles className="h-4 w-4" />
+              Generar con IA
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="upload" className="space-y-6">
+            <ImageUpload
+              file={file}
+              previewUrl={previewUrl}
+              onFileChange={handleFileChange}
+              onPreviewChange={handlePreviewChange}
+            />
+          </TabsContent>
+
+          <TabsContent value="generate" className="space-y-6">
+            <AIImageGenerator
+              onImageGenerated={handleImageGenerated}
+              isGenerating={isGenerating}
+              setIsGenerating={setIsGenerating}
+            />
+          </TabsContent>
+        </Tabs>
+
+        {/* NFT Details Form */}
         <Card>
           <CardHeader>
             <CardTitle>Detalles del NFT</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            {/* File Upload */}
-            <div className="space-y-2">
-              <Label>Subir Imagen</Label>
-              <div
-                className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-primary transition-colors cursor-pointer"
-                onDragOver={handleDragOver}
-                onDrop={handleDrop}
-                onClick={() => document.getElementById('file-input')?.click()}
-              >
-                {previewUrl ? (
-                  <div className="relative">
-                    <img
-                      src={previewUrl}
-                      alt="Preview"
-                      className="max-h-64 mx-auto rounded-lg"
-                    />
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="mt-4"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        document.getElementById('file-input')?.click();
-                      }}
-                    >
-                      Cambiar Imagen
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="py-8">
-                    <Upload className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-                    <p className="text-lg mb-2">Arrastra tu imagen aquí</p>
-                    <p className="text-sm text-muted-foreground">
-                      o haz clic para navegar (PNG, JPG, GIF hasta 10MB)
-                    </p>
-                  </div>
-                )}
-              </div>
-              <input
-                id="file-input"
-                type="file"
-                accept="image/*"
-                onChange={handleFileChange}
-                className="hidden"
-              />
-            </div>
-
-            {/* NFT Information */}
-            <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label htmlFor="name">Nombre</Label>
                 <Input
@@ -242,17 +221,6 @@ export default function CreatePage() {
                   placeholder="Ingresa el nombre del NFT"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="description">Descripción</Label>
-                <Textarea
-                  id="description"
-                  placeholder="Describe tu NFT"
-                  rows={4}
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
                 />
               </div>
 
@@ -270,56 +238,86 @@ export default function CreatePage() {
               </div>
             </div>
 
+            <div className="space-y-2">
+              <Label htmlFor="description">Descripción</Label>
+              <Textarea
+                id="description"
+                placeholder="Describe tu NFT"
+                rows={4}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+              />
+            </div>
+
             {/* Progress Indicators */}
             {isCreating && (
-              <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
-                <h3 className="font-semibold">Progreso de Creación</h3>
-                <div className="space-y-3">
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                className="space-y-4 p-6 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border"
+              >
+                <h3 className="font-semibold text-lg">Progreso de Creación</h3>
+                <div className="space-y-4">
                   <div className="flex items-center gap-3">
                     {progress.ipfs ? (
-                      <CheckCircle className="h-5 w-5 text-green-500" />
+                      <CheckCircle className="h-6 w-6 text-green-500" />
                     ) : isCreating ? (
-                      <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                      <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
                     ) : (
-                      <div className="h-5 w-5 rounded-full border-2 border-gray-300" />
+                      <div className="h-6 w-6 rounded-full border-2 border-gray-300" />
                     )}
-                    <span className={progress.ipfs ? 'text-green-600' : ''}>
-                      Subir a IPFS
-                    </span>
+                    <div className="flex-1">
+                      <span className={`font-medium ${progress.ipfs ? 'text-green-600' : ''}`}>
+                        Subir a IPFS
+                      </span>
+                      <p className="text-sm text-muted-foreground">
+                        Almacenando imagen y metadatos de forma descentralizada
+                      </p>
+                    </div>
                   </div>
 
                   <div className="flex items-center gap-3">
                     {progress.mint ? (
-                      <CheckCircle className="h-5 w-5 text-green-500" />
+                      <CheckCircle className="h-6 w-6 text-green-500" />
                     ) : progress.ipfs && isCreating ? (
-                      <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                      <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
                     ) : (
-                      <div className="h-5 w-5 rounded-full border-2 border-gray-300" />
+                      <div className="h-6 w-6 rounded-full border-2 border-gray-300" />
                     )}
-                    <span className={progress.mint ? 'text-green-600' : ''}>
-                      Crear NFT
-                    </span>
+                    <div className="flex-1">
+                      <span className={`font-medium ${progress.mint ? 'text-green-600' : ''}`}>
+                        Crear NFT
+                      </span>
+                      <p className="text-sm text-muted-foreground">
+                        Acuñando tu NFT en la blockchain
+                      </p>
+                    </div>
                   </div>
 
                   <div className="flex items-center gap-3">
                     {progress.list ? (
-                      <CheckCircle className="h-5 w-5 text-green-500" />
+                      <CheckCircle className="h-6 w-6 text-green-500" />
                     ) : progress.mint && isCreating ? (
-                      <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                      <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
                     ) : (
-                      <div className="h-5 w-5 rounded-full border-2 border-gray-300" />
+                      <div className="h-6 w-6 rounded-full border-2 border-gray-300" />
                     )}
-                    <span className={progress.list ? 'text-green-600' : ''}>
-                      Listar para Venta
-                    </span>
+                    <div className="flex-1">
+                      <span className={`font-medium ${progress.list ? 'text-green-600' : ''}`}>
+                        Listar para Venta
+                      </span>
+                      <p className="text-sm text-muted-foreground">
+                        Poniendo tu NFT disponible en el marketplace
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
+              </motion.div>
             )}
 
             <Button
               onClick={handleCreate}
-              disabled={!file || !name || !description || !price || isCreating || uploading}
+              disabled={!file || !name || !description || !price || isCreating || uploading || isGenerating}
               className="w-full"
               size="lg"
             >

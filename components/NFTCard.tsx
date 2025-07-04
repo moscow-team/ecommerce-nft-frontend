@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { use, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { NFT } from '@/types';
 import { cn } from '@/lib/utils';
+import { useAccount } from 'wagmi';
 
 interface NFTCardProps {
   nft: NFT;
@@ -20,6 +21,7 @@ interface NFTCardProps {
 
 export const NFTCard = ({ nft, showActions = true, className }: NFTCardProps) => {
   const [imageLoading, setImageLoading] = useState(true);
+  const { address: currentAddress } = useAccount();
 
   const price = nft.price && nft.price !== '0' ? formatEther(BigInt(nft.price)) : null;
 
@@ -70,7 +72,7 @@ export const NFTCard = ({ nft, showActions = true, className }: NFTCardProps) =>
                   Ver
                 </Link>
               </Button>
-              {nft.isListed && price && (
+              {nft.isListed && price && nft.owner !== currentAddress && (
                 <Button size="sm" asChild>
                   <Link href={`/buy/${nft.tokenId}`}>
                     <ShoppingCart className="h-4 w-4 mr-1" />
@@ -102,7 +104,7 @@ export const NFTCard = ({ nft, showActions = true, className }: NFTCardProps) =>
 
         {showActions && (
           <CardFooter className="p-4 pt-0">
-            {nft.isListed && price ? (
+            {nft.isListed && price && nft.owner !== currentAddress ? (
               <Button asChild className="w-full">
                 <Link href={`/buy/${nft.tokenId}`}>
                   <ShoppingCart className="h-4 w-4 mr-2" />
