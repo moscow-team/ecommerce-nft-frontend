@@ -58,7 +58,7 @@ export default function AIImageGenerator({ onImageGenerated, isGenerating, setIs
     // Check if API key is configured
     if (!process.env.NEXT_PUBLIC_HUGGINGFACE_API_KEY) {
       toast.error('API key de Hugging Face no configurada. Usando imágenes de demostración.');
-      
+
       // Fallback to demo images
       const demoImages = [
         'https://images.pexels.com/photos/1568607/pexels-photo-1568607.jpeg?auto=compress&cs=tinysrgb&w=512',
@@ -69,7 +69,7 @@ export default function AIImageGenerator({ onImageGenerated, isGenerating, setIs
 
       setIsGenerating(true);
       await new Promise(resolve => setTimeout(resolve, 2000));
-      
+
       const demoImageData = await Promise.all(
         demoImages.map(async (url) => {
           const response = await fetch(url);
@@ -77,7 +77,7 @@ export default function AIImageGenerator({ onImageGenerated, isGenerating, setIs
           return { url, blob };
         })
       );
-      
+
       setGeneratedImages(demoImageData);
       setIsGenerating(false);
       toast.success('¡Imágenes de demostración cargadas!');
@@ -90,7 +90,7 @@ export default function AIImageGenerator({ onImageGenerated, isGenerating, setIs
 
     try {
       toast.info('Generando imágenes con IA...');
-      
+
       const blobs = await aiImageService.generateMultipleImages({
         prompt,
         negativePrompt,
@@ -119,7 +119,7 @@ export default function AIImageGenerator({ onImageGenerated, isGenerating, setIs
 
   const selectImage = useCallback(async (imageData: { url: string; blob: Blob }) => {
     setSelectedImage(imageData.url);
-    
+
     try {
       const file = aiImageService.blobToFile(imageData.blob, 'ai-generated-image.png');
       onImageGenerated(imageData.url, file);
@@ -189,6 +189,7 @@ export default function AIImageGenerator({ onImageGenerated, isGenerating, setIs
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               rows={3}
+              maxLength={150}
               className="resize-none"
             />
           </div>
@@ -236,7 +237,7 @@ export default function AIImageGenerator({ onImageGenerated, isGenerating, setIs
                 </SelectTrigger>
                 <SelectContent>
                   {aspectRatios.map((ratio) => (
-                    <SelectItem key={ratio.value} value={ratio.value}>
+                    <SelectItem key={ratio.value} value={ratio.value} disabled={true}>
                       {ratio.label}
                     </SelectItem>
                   ))}
@@ -244,18 +245,18 @@ export default function AIImageGenerator({ onImageGenerated, isGenerating, setIs
               </Select>
             </div>
           </div>
-
-          {/* Advanced Settings */}
+          {/*
           <div className="space-y-4">
             <Button
               variant="outline"
               size="sm"
               onClick={() => setShowAdvanced(!showAdvanced)}
               className="flex items-center gap-2"
-            >
+              >
               <Settings className="h-4 w-4" />
               Configuración Avanzada
             </Button>
+                  
 
             {showAdvanced && (
               <motion.div
@@ -301,6 +302,7 @@ export default function AIImageGenerator({ onImageGenerated, isGenerating, setIs
               </motion.div>
             )}
           </div>
+          */}
 
           {/* Generate Button */}
           <Button
@@ -343,14 +345,13 @@ export default function AIImageGenerator({ onImageGenerated, isGenerating, setIs
                   <img
                     src={imageData.url}
                     alt={`Generated ${index + 1}`}
-                    className={`w-full h-48 object-cover rounded-lg cursor-pointer transition-all duration-200 ${
-                      selectedImage === imageData.url
+                    className={`w-full h-48 object-cover rounded-lg cursor-pointer transition-all duration-200 ${selectedImage === imageData.url
                         ? 'ring-4 ring-purple-500 ring-opacity-50'
                         : 'hover:scale-105'
-                    }`}
+                      }`}
                     onClick={() => selectImage(imageData)}
                   />
-                  
+
                   <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-200 rounded-lg flex items-center justify-center">
                     <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex gap-2">
                       <Button
