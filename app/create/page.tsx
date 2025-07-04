@@ -77,23 +77,18 @@ export default function CreatePage() {
     try {
       // Step 1: Upload to IPFS
       toast.info('Subiendo a IPFS...');
-      // const imageUrl = await uploadFile(file);
+      const imageUrl = await uploadFile(file);
+      const metadataUrl = await uploadMetadata({
+        name,
+        description,
+        image: imageUrl,
+      });
 
-      const metadata = {
-        name: "NFT de prueba",
-        description: "Este es un NFT de prueba mockeado",
-        image: "ipfs://QmFakeHash123456789", // 👈 o una URL a IPFS gateway como https://ipfs.io/ipfs/Qm...
-        attributes: []
-      };
-
-
-      // const metadataUrl = await uploadMetadata(metadata);
       setProgress(prev => ({ ...prev, ipfs: true }));
       toast.success('✅ Subido a IPFS');
 
       // Step 2: Mint NFT
       toast.info('Creando NFT...');
-
 
       if (!walletClient) {
         toast.error("No se pudo obtener el signer");
@@ -104,30 +99,44 @@ export default function CreatePage() {
       const signer = await provider.getSigner();
 
       const nftContract = new ethers.Contract(CONTRACTS.NFT_ADDRESS, ERC721_ABI, signer);
-      const tx = await nftContract.mint(address, metadata.image);
+      const tx = await nftContract.mint(address, metadataUrl);
+
       const receipt = await tx.wait();
+
+      // Parsear logs para obtener el tokenId desde el evento
       const parsedLogs = receipt.logs
         .map((log: any) => {
           try {
             return nftContract.interface.parseLog(log);
-          } catch (e) {
+          } catch {
             return null;
           }
         })
-        .filter(Boolean);
+        .filter((log: any) => log?.name === "NFTMinted");
 
-      const tokenId = parsedLogs.find((log: any) => log?.name === "NFTMinted")?.args?.tokenId?.toString();
+      if (parsedLogs.length === 0) {
+        throw new Error("No se pudo obtener el tokenId del evento");
+      }
+
+      const tokenId = parsedLogs[0].args.tokenId.toString();
       console.log("✅ tokenId generado:", tokenId);
 
 
       setProgress(prev => ({ ...prev, mint: true }));
       toast.success('NFT creado exitosamente!');
 
-      // Step 3: List NFT
+      // Step 3: Approve NFT
+      toast.info('Aprobando NFT para el Marketplace...');
+      const approveTx = await nftContract.approve(CONTRACTS.MARKET_ADDRESS, tokenId);
+      await approveTx.wait(); // 🔥 espera que la aprobación se mine
+      toast.success('✅ Aprobación completada');
+
+      // Step 4: List NFT
       toast.info('Listando NFT para la venta...');
       await listNFT(tokenId, price);
       setProgress(prev => ({ ...prev, list: true }));
       toast.success('NFT listado exitosamente!');
+
 
       // Redirect after success
       setTimeout(() => {

@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useReadContract, useAccount, useWalletClient } from 'wagmi';
-import api from '@/lib/axios';
 import { NFT, Listing } from '@/types';
 import { CONTRACTS, ERC721_ABI, MARKETPLACE_ABI } from '@/lib/contracts';
 import { useIPFS } from './useIPFS';
@@ -14,147 +13,202 @@ export const useNFTs = () => {
   const { resolveCid } = useIPFS();
   const { data: walletClient } = useWalletClient();
 
-
-  // const fetchNFTMetadata = useCallback(async (tokenId: number): Promise<Partial<NFT> | null> => {
-  //   try {
-  //     // Get token URI
-  //     const { data: tokenURI } = await api.get(`/api/nfts/${tokenId}/uri`);
-      
-  //     if (!tokenURI) return null;
-
-  //     // Fetch metadata from IPFS
-  //     const metadataUrl = resolveCid(tokenURI);
-  //     const metadataResponse = await fetch(metadataUrl);
-  //     const metadata = await metadataResponse.json();
-
-  //     // Get owner
-  //     const { data: owner } = await api.get(`/api/nfts/${tokenId}/owner`);
-
-  //     // Get listing info
-  //     let listing: Listing | null = null;
-  //     try {
-  //       const { data: listingData } = await api.get(`/api/market/listing/${tokenId}`);
-  //       listing = listingData;
-  //     } catch (error) {
-  //       // NFT might not be listed
-  //     }
-
-  //     return {
-  //       id: `${tokenId}`,
-  //       tokenId,
-  //       name: metadata.name,
-  //       description: metadata.description,
-  //       image: resolveCid(metadata.image),
-  //       owner: owner,
-  //       creator: owner, // Simplified - could track original creator
-  //       price: listing?.price || '0',
-  //       isListed: listing?.active || false,
-  //       tokenURI: tokenURI,
-  //     };
-  //   } catch (error) {
-  //     console.error(`Error fetching NFT ${tokenId}:`, error);
-  //     return null;
-  //   }
-  // }, [resolveCid]);
-
   const loadAllNFTs = useCallback(async () => {
-    // if (!totalSupply || totalSupply === BigInt(0)) {
-    //   setNfts([]);
-    //   setLoading(false);
-    //   return;
-    // }
-
     setLoading(true);
     try {
-      // const nftPromises = [];
-      // for (let i = 1; i <= Number(totalSupply); i++) {
-      //   nftPromises.push(fetchNFTMetadata(i));
-      // }
+      if (!walletClient) {
+        toast.error("No se pudo obtener el signer");
+        return;
+      }
 
-      // const nftResults = await Promise.all(nftPromises);
-      // const validNFTs = nftResults.filter((nft): nft is NFT => nft !== null) as NFT[];
-      
-      // setNfts(validNFTs);
-      setNfts([]);
+      const provider = new ethers.BrowserProvider(walletClient.transport);
+      const signer = await provider.getSigner();
+      const nftContract = new ethers.Contract(CONTRACTS.NFT_ADDRESS, ERC721_ABI, signer);
+      const marketContract = new ethers.Contract(CONTRACTS.MARKET_ADDRESS, MARKETPLACE_ABI, signer);
+
+      const totalSupply: bigint = await nftContract.totalSupply();
+      console.log('totalSuple: ', totalSupply)
+
+      if (totalSupply === BigInt(0)) {
+        setNfts([]);
+        return;
+      }
+
+      const nftResults = await Promise.all(
+        Array.from({ length: Number(totalSupply) }).map(async (_, i) => {
+          const tokenId = i + 1;
+
+          try {
+            const tokenURI = await nftContract.tokenURI(tokenId);
+            const owner = await nftContract.ownerOf(tokenId);
+            const metadataUrl = resolveCid(tokenURI);
+            const metadataRes = await fetch(metadataUrl);
+            const metadata = await metadataRes.json();
+
+            // Check listing status
+            const listing = await marketContract.listings(tokenId);
+            const isListed = listing.price > 0;
+
+            return {
+              id: tokenId.toString(),
+              tokenId,
+              name: metadata.name,
+              description: metadata.description,
+              image: resolveCid(metadata.image),
+              owner,
+              creator: owner,
+              price: isListed ? listing.price.toString() : '0',
+              isListed,
+              tokenURI,
+            };
+          } catch (e) {
+            console.warn(`❌ Error al procesar tokenId ${tokenId}:`, e);
+            return {};
+          }
+        })
+      );
+
+      const valid = nftResults.filter((nft): nft is NFT => nft !== null);
+      setNfts(valid);
     } catch (error) {
-      console.error('Error loading NFTs:', error);
+      console.error("Error loading NFTs:", error);
+      toast.error("Error cargando NFTs");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [walletClient]);
+
 
   const loadUserNFTs = async () => {
-  setLoading(true);
-  try {
-    if (!walletClient) {
-      toast.error("No se pudo obtener el signer");
-      return;
+    setLoading(true);
+    try {
+      if (!walletClient) {
+        toast.error("No se pudo obtener el signer");
+        return;
+      }
+
+      const provider = new ethers.BrowserProvider(walletClient.transport);
+      const signer = await provider.getSigner();
+
+      const nftContract = new ethers.Contract(CONTRACTS.NFT_ADDRESS, ERC721_ABI, signer);
+      const marketContract = new ethers.Contract(CONTRACTS.MARKET_ADDRESS, MARKETPLACE_ABI, signer);
+
+      // 1. Obtener listados
+      const [tokenIds, prices] = await marketContract.getAllListings();
+
+      if (!tokenIds.length) {
+        setNfts([]);
+        return;
+      }
+
+      // 2. Obtener metadatas
+      const nftResults = await Promise.all(
+        tokenIds.map(async (id: bigint, index: number) => {
+          try {
+            const tokenId = Number(id);
+            const tokenURI = await nftContract.tokenURI(tokenId);
+            const owner = await nftContract.ownerOf(tokenId);
+            const metadataUrl = resolveCid(tokenURI);
+            const metadataResponse = await fetch(metadataUrl);
+            const metadata = await metadataResponse.json();
+
+            return {
+              id: tokenId.toString(),
+              tokenId,
+              name: metadata.name,
+              description: metadata.description,
+              image: resolveCid(metadata.image),
+              owner,
+              creator: owner, // o ajustar si querés trackear minter original
+              price: prices[index].toString(),
+              isListed: true,
+              tokenURI,
+            };
+          } catch (e) {
+            console.warn(`Error al procesar NFT ${id.toString()}:`, e);
+            return null;
+          }
+        })
+      );
+
+      const validNFTs = nftResults.filter((nft): nft is NFT => nft !== null);
+      setNfts(validNFTs);
+    } catch (error) {
+      console.error("Error loading NFTs:", error);
+      toast.error("Error cargando NFTs");
+    } finally {
+      setLoading(false);
     }
+  };
 
-    const provider = new ethers.BrowserProvider(walletClient.transport);
-    const signer = await provider.getSigner();
+  const fetchNFTMetadata = useCallback(async (
+    tokenId: number,
+  ): Promise<Partial<NFT> | null> => {
+    try {
+      if (!walletClient) {
+        toast.error("No se pudo obtener el signer");
+        return null;
+      }
 
-    const nftContract = new ethers.Contract(CONTRACTS.NFT_ADDRESS, ERC721_ABI, signer);
-    const marketContract = new ethers.Contract(CONTRACTS.MARKET_ADDRESS, MARKETPLACE_ABI, signer);
+      const provider = new ethers.BrowserProvider(walletClient.transport);
+      const signer = await provider.getSigner();
+      const nftContract = new ethers.Contract(CONTRACTS.NFT_ADDRESS, ERC721_ABI, signer);
+      const marketContract = new ethers.Contract(CONTRACTS.MARKET_ADDRESS, MARKETPLACE_ABI, signer);
 
-    // 1. Obtener listados
-    const [tokenIds, prices] = await marketContract.getAllListings();
+      // 1. Obtener tokenURI y owner desde contrato
+      const tokenURI = await nftContract.tokenURI(tokenId);
+      const owner = await nftContract.ownerOf(tokenId);
 
-    if (!tokenIds.length) {
-      setNfts([]);
-      return;
+      // 2. Fetch desde IPFS
+      const metadataUrl = resolveCid(tokenURI);
+      const metadataResponse = await fetch(metadataUrl);
+      const metadata = await metadataResponse.json();
+
+      // 3. Obtener info del marketplace
+      let listing: Listing | null = null;
+      try {
+        const listingData = await marketContract.listings(tokenId);
+
+        listing = {
+          tokenId,
+          price: listingData.price.toString(),
+          active: listingData.price > 0 && listingData.seller !== ethers.ZeroAddress,
+          seller: listingData.seller,
+        };
+      } catch (e) {
+        console.warn(`No se pudo obtener listing para tokenId ${tokenId}:`, e);
+        // Puede no estar listado
+      }
+
+      return {
+        id: tokenId.toString(),
+        tokenId,
+        name: metadata.name,
+        description: metadata.description,
+        image: resolveCid(metadata.image),
+        owner,
+        creator: owner,
+        price: listing?.price || '0',
+        isListed: listing?.active || false,
+        tokenURI,
+      };
+    } catch (error) {
+      console.error(`❌ Error fetching NFT ${tokenId}:`, error);
+      return null;
     }
-
-    // 2. Obtener metadatas
-    const nftResults = await Promise.all(
-      tokenIds.map(async (id: bigint, index: number) => {
-        try {
-          const tokenId = Number(id);
-          const tokenURI = await nftContract.tokenURI(tokenId);
-          const owner = await nftContract.ownerOf(tokenId);
-          const metadataUrl = resolveCid(tokenURI);
-          const metadataResponse = await fetch(metadataUrl);
-          const metadata = await metadataResponse.json();
-
-          return {
-            id: tokenId.toString(),
-            tokenId,
-            name: metadata.name,
-            description: metadata.description,
-            image: resolveCid(metadata.image),
-            owner,
-            creator: owner, // o ajustar si querés trackear minter original
-            price: prices[index].toString(),
-            isListed: true,
-            tokenURI,
-          };
-        } catch (e) {
-          console.warn(`Error al procesar NFT ${id.toString()}:`, e);
-          return null;
-        }
-      })
-    );
-
-    const validNFTs = nftResults.filter((nft): nft is NFT => nft !== null);
-    setNfts(validNFTs);
-  } catch (error) {
-    console.error("Error loading NFTs:", error);
-    toast.error("Error cargando NFTs");
-  } finally {
-    setLoading(false);
-  }
-};
+  }, []);
 
 
-  // useEffect(() => {
-  //   loadAllNFTs();
-  // }, [loadAllNFTs]);
+
+  useEffect(() => {
+    loadAllNFTs();
+  }, [loadAllNFTs]);
 
   return {
     nfts,
     loading,
     loadAllNFTs,
     loadUserNFTs,
-    // fetchNFTMetadata,
+    fetchNFTMetadata
   };
 };

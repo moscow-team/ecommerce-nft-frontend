@@ -1,44 +1,52 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useAccount } from 'wagmi';
+import { useAccount, useReadContract } from 'wagmi';
 import { motion } from 'framer-motion';
 import { Wallet, Download, Plus } from 'lucide-react';
 import { formatEther } from 'viem';
 import { toast } from 'sonner';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { NFTCard } from '@/components/NFTCard';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { useNFTs } from '@/hooks/useNFTs';
 import { useMarketplace } from '@/hooks/useMarketplace';
-import api from '@/lib/axios';
+import { CONTRACTS, ERC20_ABI, MARKETPLACE_ABI } from '@/lib/contracts';
 
 export default function MyNFTsPage() {
   const { address, isConnected } = useAccount();
   const { nfts, loading, loadUserNFTs } = useNFTs();
   const { withdraw } = useMarketplace();
-  const [pendingWithdrawals, setPendingWithdrawals] = useState('0');
+
+  const [proceeds, setProceeds] = useState<bigint>(BigInt(0));
   const [isWithdrawing, setIsWithdrawing] = useState(false);
-  const loadPendingWithdrawals = async () => {
-    // if (!address) return;
 
-    // try {
-    //   const response = await api.get(`/api/market/withdrawals/${address}`);
-    //   setPendingWithdrawals(response.data.amount || '0');
-    // } catch (error) {
-    //   console.error('Error loading pending withdrawals:', error);
-    // }
-    await loadUserNFTs();
-  };
+  const { data: dipBalance } = useReadContract({
+    address: CONTRACTS.DIP_ADDRESS as any,
+    abi: ERC20_ABI,
+    functionName: 'balanceOf',
+    args: address ? [address] : undefined,
+  });
+
+  const { data: userProceeds, refetch: refetchProceeds } = useReadContract({
+    address: CONTRACTS.MARKET_ADDRESS as any,
+    abi: MARKETPLACE_ABI,
+    functionName: 'proceeds',
+    args: address ? [address] : undefined,
+  });
+
   useEffect(() => {
+    if (userProceeds) {
+      setProceeds(userProceeds as bigint);
+    }
+  }, [userProceeds]);
 
-
+  useEffect(() => {
     if (isConnected && address) {
-      loadPendingWithdrawals();
-      // loadPendingWithdrawals();
+      loadUserNFTs();
     }
   }, [isConnected, address]);
 
@@ -46,10 +54,11 @@ export default function MyNFTsPage() {
     setIsWithdrawing(true);
     try {
       await withdraw();
-      setPendingWithdrawals('0');
       toast.success('¡Fondos retirados exitosamente!');
+      refetchProceeds(); // actualiza proceeds luego del retiro
     } catch (error) {
       console.error('Error withdrawing funds:', error);
+      toast.error('Error al retirar fondos');
     } finally {
       setIsWithdrawing(false);
     }
@@ -73,6 +82,8 @@ export default function MyNFTsPage() {
 
   const ownedNFTs = nfts.filter(nft => nft.owner.toLowerCase() === address?.toLowerCase());
   const listedNFTs = ownedNFTs.filter(nft => nft.isListed);
+  const dip = typeof dipBalance === 'bigint' ? dipBalance : BigInt(0);
+  const totalBalance = dip + proceeds;
 
   return (
     <div className="space-y-8">
@@ -82,14 +93,11 @@ export default function MyNFTsPage() {
         className="flex items-center justify-between"
       >
         <div>
-          <h1 className="text-3xl font-bold mb-2">
-            Mis NFTs
-          </h1>
+          <h1 className="text-3xl font-bold mb-2">Mis NFTs</h1>
           <p className="text-muted-foreground">
             Gestiona tu colección de NFTs y ganancias
           </p>
         </div>
-
         <Button asChild>
           <Link href="/create">
             <Plus className="h-4 w-4 mr-2" />
@@ -138,14 +146,14 @@ export default function MyNFTsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-2xl font-bold">
-                  {formatEther(BigInt(pendingWithdrawals))} DIP
+                  {formatEther(totalBalance)} DIP
                 </div>
-                <div className="text-sm text-muted-foreground">Retiros Pendientes</div>
+                <div className="text-sm text-muted-foreground">Total Disponible</div>
               </div>
               <Button
                 size="sm"
                 onClick={handleWithdraw}
-                disabled={pendingWithdrawals === '0' || isWithdrawing}
+                disabled={proceeds === BigInt(0) || isWithdrawing}
               >
                 {isWithdrawing ? (
                   <LoadingSpinner size={16} />
@@ -171,58 +179,19 @@ export default function MyNFTsPage() {
           </TabsList>
 
           <TabsContent value="owned" className="mt-6">
-            {loading ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {Array.from({ length: 4 }).map((_, i) => (
-                  <Card key={i} className="overflow-hidden">
-                    <div className="aspect-square bg-gray-200 animate-pulse" />
-                    <CardContent className="p-4">
-                      <div className="h-4 bg-gray-200 animate-pulse rounded mb-2" />
-                      <div className="h-3 bg-gray-200 animate-pulse rounded w-2/3" />
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            ) : ownedNFTs.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {ownedNFTs.map((nft) => (
-                  <NFTCard key={nft.id} nft={nft} showActions={false} />
-                ))}
-              </div>
-            ) : (
-              <Card className="p-12 text-center">
-                <CardContent>
-                  <div className="text-6xl mb-4">🎨</div>
-                  <h3 className="text-xl font-semibold mb-2">Aún no tienes NFTs</h3>
-                  <p className="text-muted-foreground mb-6">
-                    ¡Crea tu primer NFT para comenzar!
-                  </p>
-                  <Button asChild>
-                    <Link href="/create">Crea tu primer NFT</Link>
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {ownedNFTs.map((nft) => (
+                <NFTCard key={nft.id} nft={nft} showActions={false} />
+              ))}
+            </div>
           </TabsContent>
 
           <TabsContent value="listed" className="mt-6">
-            {listedNFTs.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {listedNFTs.map((nft) => (
-                  <NFTCard key={nft.id} nft={nft} showActions={false} />
-                ))}
-              </div>
-            ) : (
-              <Card className="p-12 text-center">
-                <CardContent>
-                  <div className="text-6xl mb-4">🏪</div>
-                  <h3 className="text-xl font-semibold mb-2">No hay NFTs Listados</h3>
-                  <p className="text-muted-foreground mb-6">
-                    ¡Lista tus NFTs para la venta y comienza a ganar!
-                  </p>
-                </CardContent>
-              </Card>
-            )}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {listedNFTs.map((nft) => (
+                <NFTCard key={nft.id} nft={nft} showActions={false} />
+              ))}
+            </div>
           </TabsContent>
         </Tabs>
       </motion.div>

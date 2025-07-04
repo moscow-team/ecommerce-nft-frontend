@@ -4,17 +4,52 @@ import { motion } from 'framer-motion';
 import { Search, Filter, Grid3X3, List } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { NFTCard } from '@/components/NFTCard';
-import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { useNFTs } from '@/hooks/useNFTs';
+import { useAccount, useWalletClient } from 'wagmi';
+import { toast } from 'sonner';
+import { ethers } from 'ethers';
+import { CONTRACTS, ERC20_ABI } from '@/lib/contracts';
+import { useState } from 'react';
 
 export default function HomePage() {
   const { nfts, loading } = useNFTs();
 
   const listedNFTs = nfts.filter(nft => nft.isListed);
   const featuredNFTs = listedNFTs.slice(0, 3);
+  const { data: walletClient } = useWalletClient();
+  const { address } = useAccount();
+  const [mintTo, setMintTo] = useState('');
+
+  const handleMint = async () => {
+    try {
+      if (!walletClient) {
+        toast.error('Conectá tu billetera');
+        return;
+      }
+
+      if (!ethers.isAddress(mintTo)) {
+        toast.error('Dirección inválida');
+        return;
+      }
+
+      const provider = new ethers.BrowserProvider(walletClient.transport);
+      const signer = await provider.getSigner();
+      const token = new ethers.Contract(CONTRACTS.DIP_ADDRESS, ERC20_ABI, signer);
+
+      const tx = await token.transfer(mintTo, ethers.parseUnits('1000', 18));
+      await tx.wait();
+
+      toast.success(`✅ 1000 DIP enviados a ${mintTo.slice(0, 6)}...`);
+      setMintTo('');
+    } catch (error) {
+      console.error('Error en mint:', error);
+      toast.error('Error al enviar DIP');
+    }
+  };
+
 
   return (
     <div className="space-y-8">
@@ -39,6 +74,24 @@ export default function HomePage() {
           </Button>
         </div>
       </motion.section>
+      {/* Sección para el owner: Transferir 1000 DIP a otra address */}
+      <Card className="max-w-xl mx-auto">
+        <CardHeader>
+          <CardTitle>Transferir 1000 DIP (como Owner)</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Input
+            type="text"
+            placeholder="Dirección de destino (0x...)"
+            value={mintTo}
+            onChange={(e) => setMintTo(e.target.value)}
+          />
+          <Button onClick={handleMint} disabled={!mintTo}>
+            Enviar 1000 DIP
+          </Button>
+        </CardContent>
+      </Card>
+
 
       {/* Stats Section */}
       <motion.section
@@ -108,7 +161,7 @@ export default function HomePage() {
             <Filter className="h-4 w-4" />
           </Button>
         </div>
-        
+
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="icon">
             <Grid3X3 className="h-4 w-4" />
@@ -126,7 +179,7 @@ export default function HomePage() {
         transition={{ delay: 0.4 }}
       >
         <h2 className="text-2xl font-bold mb-6">Todos los NFTs</h2>
-        
+
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {Array.from({ length: 8 }).map((_, i) => (

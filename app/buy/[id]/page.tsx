@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAccount, useReadContract } from 'wagmi';
+import { useAccount, usePublicClient, useReadContract, useWaitForTransactionReceipt, useWriteContract } from 'wagmi';
 import { motion } from 'framer-motion';
 import { formatEther, parseEther } from 'viem';
 import { ShoppingCart, ExternalLink, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
@@ -38,18 +38,18 @@ export default function BuyNFTPage({ params }: BuyNFTPageProps) {
   const [step, setStep] = useState<'approval' | 'purchase' | 'complete'>('approval');
 
   const [tokenId, setTokenId] = useState<number>(0);
+  const DIP_ADDRES: string = CONTRACTS.DIP_ADDRESS as string
 
   // Get user's DIP balance
   const { data: dipBalance } = useReadContract({
-    address: CONTRACTS.DIP_ADDRESS,
+    address: DIP_ADDRES as any,
     abi: ERC20_ABI,
     functionName: 'balanceOf',
     args: address ? [address] : undefined,
   });
-
   // Get current allowance
   const { data: allowance } = useReadContract({
-    address: CONTRACTS.DIP_ADDRESS,
+    address: DIP_ADDRES as any,
     abi: ERC20_ABI,
     functionName: 'allowance',
     args: address ? [address, CONTRACTS.MARKET_ADDRESS] : undefined,
@@ -64,6 +64,7 @@ export default function BuyNFTPage({ params }: BuyNFTPageProps) {
         
         const nftData = await fetchNFTMetadata(parsedTokenId);
         if (nftData) {
+          console.log('NFT data loaded:', nftData);
           setNft(nftData as NFT);
         } else {
           toast.error('NFT no encontrado');
@@ -81,42 +82,67 @@ export default function BuyNFTPage({ params }: BuyNFTPageProps) {
     loadNFT();
   }, [params, fetchNFTMetadata, router]);
 
+  const { writeContractAsync } = useWriteContract();
+  const publicClient = usePublicClient()!;
+
+
   const handlePurchase = async () => {
-    if (!nft || !address || !isConnected) {
-      toast.error('Por favor conecta tu billetera');
-      return;
-    }
+  if (!nft || !address || !isConnected) {
+    toast.error('Por favor conecta tu billetera');
+    return;
+  }
 
-    if (!nft.isListed || !nft.price || nft.price === '0') {
-      toast.error('Este NFT no está en venta');
-      return;
-    }
+  if (!nft.isListed || !nft.price || nft.price === '0') {
+    toast.error('Este NFT no está en venta');
+    return;
+  }
 
-    const price = nft.price;
-    const priceInWei = BigInt(price);
-    const userBalance = dipBalance || 0;
+  const price = BigInt(nft.price);
+  const userBalance = dipBalance as number ;
+  const userAllowance = allowance as number;
 
-    if (userBalance < priceInWei) {
-      toast.error('Saldo insuficiente de DIP');
-      return;
-    }
+  if (userBalance < price) {
+    toast.error('Saldo insuficiente de DIP');
+    return;
+  }
 
-    setPurchasing(true);
-    
-    try {
-      await buyNFT(tokenId, formatEther(priceInWei));
-      setStep('complete');
-      
-      setTimeout(() => {
-        router.push('/my-nfts');
-      }, 3000);
-    } catch (error: any) {
-      console.error('Purchase failed:', error);
-      toast.error(error.message || 'Error en la compra');
-    } finally {
-      setPurchasing(false);
-    }
-  };
+  setPurchasing(true);
+  setStep('approval');
+
+  try {
+    // 🔐 Paso 1: Aprobación (approve) si hace falta
+   if (userAllowance < price) {
+  toast.info('Aprobando gasto de DIP...');
+  const approveTx = await writeContractAsync({
+    address: DIP_ADDRES as any,
+    abi: ERC20_ABI,
+    functionName: 'approve',
+    args: [CONTRACTS.MARKET_ADDRESS, price],
+  });
+
+  // Esperar confirmación del approve usando publicClient
+  await publicClient.waitForTransactionReceipt({ hash: approveTx });
+}
+
+    // 💳 Paso 2: Comprar
+    setStep('purchase');
+    toast.info('Ejecutando compra...');
+
+    await buyNFT(tokenId, nft.price);
+
+    setStep('complete');
+    toast.success('✅ Compra completada');
+
+    setTimeout(() => {
+      router.push('/my-nfts');
+    }, 3000);
+  } catch (error: any) {
+    console.error('❌ Error en la compra:', error);
+    toast.error(error.message || 'Error al comprar NFT');
+  } finally {
+    setPurchasing(false);
+  }
+};
 
   if (loading) {
     return (
@@ -162,8 +188,11 @@ export default function BuyNFTPage({ params }: BuyNFTPageProps) {
   }
 
   const price = nft.price ? formatEther(BigInt(nft.price)) : '0';
-  const userBalance = dipBalance ? formatEther(dipBalance) : '0';
-  const canAfford = dipBalance && nft.price ? dipBalance >= BigInt(nft.price) : false;
+  const userBalance = dipBalance ? formatEther(dipBalance as bigint) : '0';
+  const canAfford =
+    dipBalance && nft.price
+      ? BigInt(dipBalance as bigint) >= BigInt(nft.price)
+      : false;
   const isOwner = nft.owner.toLowerCase() === address?.toLowerCase();
 
   return (
