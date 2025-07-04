@@ -1,23 +1,21 @@
 'use client';
 
-import { useState, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAccount, useWalletClient } from 'wagmi';
-import { motion } from 'framer-motion';
-import { Upload, Image as ImageIcon, Loader2, CheckCircle } from 'lucide-react';
-import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { useIPFS } from '@/hooks/useIPFS';
 import { useMarketplace } from '@/hooks/useMarketplace';
-import api from '@/lib/axios';
+import { CONTRACTS, ERC721_ABI } from '@/lib/contracts';
 import { UploadProgress } from '@/types';
 import { ethers } from 'ethers';
-import { CONTRACTS, ERC20_ABI, ERC721_ABI } from '@/lib/contracts';
+import { motion } from 'framer-motion';
+import { CheckCircle, Image as ImageIcon, Loader2, Upload } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useCallback, useState } from 'react';
+import { toast } from 'sonner';
+import { useAccount, useWalletClient } from 'wagmi';
 
 export default function CreatePage() {
   const router = useRouter();

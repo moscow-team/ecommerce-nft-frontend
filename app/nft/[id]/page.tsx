@@ -1,36 +1,30 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import {
-  useAccount,
-  usePublicClient,
-  useReadContract,
-  useWriteContract,
-} from 'wagmi';
-import { motion } from 'framer-motion';
-import { formatEther, parseEther } from 'viem';
-import {
-  ShoppingCart,
-  ExternalLink,
-  Loader2,
-  CheckCircle,
-  AlertCircle,
-} from 'lucide-react';
-import { toast } from 'sonner';
-import Image from 'next/image';
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Separator } from '@/components/ui/separator';
 import { useNFTs } from '@/hooks/useNFTs';
 import { CONTRACTS, ERC721_ABI, MARKETPLACE_ABI } from '@/lib/contracts';
 import { NFT } from '@/types';
 import { ethers } from 'ethers';
+import { motion } from 'framer-motion';
+import {
+  ExternalLink,
+  Loader2,
+  ShoppingCart
+} from 'lucide-react';
+import Image from 'next/image';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
+import { formatEther, parseEther } from 'viem';
+import {
+  useAccount
+} from 'wagmi';
 
 interface ViewNFTPageProps {
   params: Promise<{
@@ -42,16 +36,13 @@ export default function ViewNFTPage({ params }: ViewNFTPageProps) {
   const router = useRouter();
   const { address, isConnected } = useAccount();
   const { fetchNFTMetadata } = useNFTs();
-
   const [nft, setNft] = useState<NFT | null>(null);
   const [loading, setLoading] = useState(true);
   const [listing, setListing] = useState(false);
   const [delisting, setDelisting] = useState(false);
   const [priceInput, setPriceInput] = useState('');
-
   const [tokenId, setTokenId] = useState<number>(0);
-  const { writeContractAsync } = useWriteContract();
-  const publicClient = usePublicClient();
+
 
   useEffect(() => {
     const loadNFT = async () => {

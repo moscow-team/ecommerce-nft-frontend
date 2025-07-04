@@ -1,19 +1,18 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useReadContract, useAccount, useWalletClient } from 'wagmi';
-import { NFT, Listing } from '@/types';
 import { CONTRACTS, ERC721_ABI, MARKETPLACE_ABI } from '@/lib/contracts';
-import { useIPFS } from './useIPFS';
-import { toast } from 'sonner';
+import { Listing, NFT } from '@/types';
 import { ethers } from 'ethers';
+import { useState } from 'react';
+import { toast } from 'sonner';
+import { useWalletClient } from 'wagmi';
+import { useIPFS } from './useIPFS';
 
 export const useNFTs = () => {
   const [nfts, setNfts] = useState<NFT[]>([]);
   const [loading, setLoading] = useState(true);
-  const { address } = useAccount();
   const { resolveCid } = useIPFS();
   const { data: walletClient } = useWalletClient();
 
-  const loadAllNFTs = useCallback(async () => {
+  const loadAllNFTs = async () => {
     setLoading(true);
     try {
       if (!walletClient) {
@@ -76,8 +75,7 @@ export const useNFTs = () => {
     } finally {
       setLoading(false);
     }
-  }, [walletClient]);
-
+  };
 
   const loadUserNFTs = async () => {
     setLoading(true);
@@ -141,7 +139,7 @@ export const useNFTs = () => {
     }
   };
 
-  const fetchNFTMetadata = useCallback(async (
+  const fetchNFTMetadata = async (
     tokenId: number,
   ): Promise<Partial<NFT> | null> => {
     try {
@@ -196,13 +194,7 @@ export const useNFTs = () => {
       console.error(`❌ Error fetching NFT ${tokenId}:`, error);
       return null;
     }
-  }, []);
-
-
-
-  useEffect(() => {
-    loadAllNFTs();
-  }, [loadAllNFTs]);
+  };
 
   return {
     nfts,

@@ -1,12 +1,11 @@
 'use client';
 
+import { RainbowKitProvider, darkTheme, getDefaultConfig, lightTheme } from '@rainbow-me/rainbowkit';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { useTheme } from 'next-themes';
 import { ReactNode } from 'react';
 import { WagmiProvider } from 'wagmi';
-import { RainbowKitProvider, darkTheme, lightTheme } from '@rainbow-me/rainbowkit';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { getDefaultConfig } from '@rainbow-me/rainbowkit';
-import { polygonAmoy, localhost } from 'wagmi/chains';
-import { useTheme } from 'next-themes';
+import { localhost } from 'wagmi/chains';
 
 import '@rainbow-me/rainbowkit/styles.css';
 
