@@ -19,7 +19,7 @@ if (!projectId || projectId === 'demo') {
   );
 }
 
-const chains = [{
+const chains: any = [{
   id: 31337, // Localhost chain ID
   name: 'Localhost',
   nativeCurrency: {

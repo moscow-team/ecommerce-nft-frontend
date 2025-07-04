@@ -356,9 +356,9 @@ export const ERC20_ABI =  [
       "stateMutability": "nonpayable",
       "type": "function"
     }
-  ]
+  ] as const
 // ERC-721 ABI (minimal for marketplace needs)
-export const ERC721_ABI = [
+export const ERC721_ABI =  [
     {
       "inputs": [],
       "stateMutability": "nonpayable",
@@ -805,7 +805,7 @@ export const ERC721_ABI = [
   ] as const;
 
 // Marketplace ABI (minimal for buy functionality)
-export const MARKETPLACE_ABI = [
+export const MARKETPLACE_ABI =[
     {
       "inputs": [
         {
