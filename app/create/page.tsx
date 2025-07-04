@@ -18,12 +18,7 @@ import { ethers } from 'ethers';
 import { useAccount, useWalletClient } from 'wagmi';
 import { useIPFS } from '@/hooks/useIPFS';
 import { useMarketplace } from '@/hooks/useMarketplace';
-
-interface UploadProgress {
-  ipfs: boolean;
-  mint: boolean;
-  list: boolean;
-}
+import { UploadProgress } from '@/types';
 
 export default function CreateNFTPage() {
   const router = useRouter();
