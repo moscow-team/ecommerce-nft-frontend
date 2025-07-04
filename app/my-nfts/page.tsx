@@ -19,6 +19,7 @@ import { CONTRACTS, ERC20_ABI, MARKETPLACE_ABI } from '@/lib/contracts';
 export default function MyNFTsPage() {
   const { address, isConnected } = useAccount();
   const { nfts, loadUserNFTs } = useNFTs();
+  
   const { withdraw } = useMarketplace();
   const [proceeds, setProceeds] = useState<bigint>(BigInt(0));
   const [isWithdrawing, setIsWithdrawing] = useState(false);
@@ -47,7 +48,7 @@ export default function MyNFTsPage() {
     if (isConnected && address) {
       loadUserNFTs();
     }
-  }, [isConnected]);
+  }, [isConnected, address, nfts]);
 
   const handleWithdraw = async () => {
     setIsWithdrawing(true);

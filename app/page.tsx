@@ -12,16 +12,31 @@ import { useAccount, useWalletClient } from 'wagmi';
 import { toast } from 'sonner';
 import { ethers } from 'ethers';
 import { CONTRACTS, ERC20_ABI } from '@/lib/contracts';
-import { useState } from 'react';
+import { use, useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function HomePage() {
-  const { nfts, loading } = useNFTs();
+  const { nfts, loading, loadAllNFTs } = useNFTs();
 
-  const listedNFTs = nfts.filter(nft => nft.isListed);
-  const featuredNFTs = listedNFTs.slice(0, 3);
   const { data: walletClient } = useWalletClient();
-  const { address } = useAccount();
+  const { address, isConnected } = useAccount();
   const [mintTo, setMintTo] = useState('');
+  const router = useRouter();
+
+  useEffect(() => {
+  if (walletClient) {
+    loadAllNFTs();
+  }
+}, [walletClient]);
+
+  const listedNFTs = useMemo(() => {
+    return nfts.filter(nft => nft.isListed);
+  }, [nfts]);
+
+  const featuredNFTs = useMemo(() => {
+    return listedNFTs.slice(0, 3);
+  }, [listedNFTs]);
+
 
   const handleMint = async () => {
     try {
@@ -50,6 +65,22 @@ export default function HomePage() {
     }
   };
 
+  if (!isConnected) {
+    return (
+      <div className="max-w-2xl mx-auto text-center py-12">
+        <Card>
+          <CardContent className="p-8">
+            <div className="text-6xl mb-4">🔒</div>
+            <h2 className="text-2xl font-bold mb-4">Conecta tu Billetera</h2>
+            <p className="text-muted-foreground mb-6">
+              Conecta tu billetera para explorar por el Marketplace.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
 
   return (
     <div className="space-y-8">
@@ -69,29 +100,30 @@ export default function HomePage() {
           <Button size="lg" className="px-8">
             Explorar NFTs
           </Button>
-          <Button size="lg" variant="outline" className="px-8">
+          <Button size="lg" variant="outline" className="px-8" onClick={() => router.push('/create')}>
             Crear NFT
           </Button>
         </div>
       </motion.section>
       {/* Sección para el owner: Transferir 1000 DIP a otra address */}
-      <Card className="max-w-xl mx-auto">
-        <CardHeader>
-          <CardTitle>Transferir 1000 DIP (como Owner)</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Input
-            type="text"
-            placeholder="Dirección de destino (0x...)"
-            value={mintTo}
-            onChange={(e) => setMintTo(e.target.value)}
-          />
-          <Button onClick={handleMint} disabled={!mintTo}>
-            Enviar 1000 DIP
-          </Button>
-        </CardContent>
-      </Card>
-
+      {address && address == process.env.NEXT_PUBLIC_ADDRESS_OWNER && (
+        <Card className="max-w-xl mx-auto">
+          <CardHeader>
+            <CardTitle>Transferir 1000 DIP (como Owner)</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Input
+              type="text"
+              placeholder="Dirección de destino (0x...)"
+              value={mintTo}
+              onChange={(e) => setMintTo(e.target.value)}
+            />
+            <Button onClick={handleMint} disabled={!mintTo}>
+              Enviar 1000 DIP
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Stats Section */}
       <motion.section
