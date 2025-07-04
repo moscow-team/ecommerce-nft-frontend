@@ -13,31 +13,11 @@ import { CheckCircle, Image as ImageIcon, Loader2, Upload, Sparkles } from 'luci
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
-
-// Mock hooks - replace with your actual implementations
-const useAccount = () => ({ 
-  address: '0x123...', 
-  isConnected: true 
-});
-
-const useIPFS = () => ({
-  uploadFile: async (file: File) => {
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    return 'https://ipfs.io/ipfs/QmHash';
-  },
-  uploadMetadata: async (metadata: any) => {
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    return 'https://ipfs.io/ipfs/QmMetaHash';
-  },
-  uploading: false
-});
-
-const useMarketplace = () => ({
-  listNFT: async (tokenId: string, price: string) => {
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    return true;
-  }
-});
+import { CONTRACTS, ERC721_ABI } from '@/lib/contracts';
+import { ethers } from 'ethers';
+import { useAccount, useWalletClient } from 'wagmi';
+import { useIPFS } from '@/hooks/useIPFS';
+import { useMarketplace } from '@/hooks/useMarketplace';
 
 interface UploadProgress {
   ipfs: boolean;
@@ -50,7 +30,7 @@ export default function CreateNFTPage() {
   const { address, isConnected } = useAccount();
   const { uploadFile, uploadMetadata, uploading } = useIPFS();
   const { listNFT } = useMarketplace();
-  
+  const { data: walletClient } = useWalletClient();
   const [activeTab, setActiveTab] = useState('upload');
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>('');
@@ -106,19 +86,56 @@ export default function CreateNFTPage() {
       setProgress(prev => ({ ...prev, ipfs: true }));
       toast.success('✅ Subido a IPFS');
 
-      // Step 2: Mint NFT (Mock implementation)
+      // Step 2: Mint NFT
       toast.info('Creando NFT...');
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      const tokenId = Math.floor(Math.random() * 10000).toString();
-      
+
+      if (!walletClient) {
+        toast.error("No se pudo obtener el signer");
+        return;
+      }
+
+      const provider = new ethers.BrowserProvider(walletClient.transport);
+      const signer = await provider.getSigner();
+
+      const nftContract = new ethers.Contract(CONTRACTS.NFT_ADDRESS, ERC721_ABI, signer);
+      const tx = await nftContract.mint(address, metadataUrl);
+
+      const receipt = await tx.wait();
+
+      // Parsear logs para obtener el tokenId desde el evento
+      const parsedLogs = receipt.logs
+        .map((log: any) => {
+          try {
+            return nftContract.interface.parseLog(log);
+          } catch {
+            return null;
+          }
+        })
+        .filter((log: any) => log?.name === "NFTMinted");
+
+      if (parsedLogs.length === 0) {
+        throw new Error("No se pudo obtener el tokenId del evento");
+      }
+
+      const tokenId = parsedLogs[0].args.tokenId.toString();
+      console.log("✅ tokenId generado:", tokenId);
+
+
       setProgress(prev => ({ ...prev, mint: true }));
       toast.success('NFT creado exitosamente!');
 
-      // Step 3: List NFT
+      // Step 3: Approve NFT
+      toast.info('Aprobando NFT para el Marketplace...');
+      const approveTx = await nftContract.approve(CONTRACTS.MARKET_ADDRESS, tokenId);
+      await approveTx.wait(); // 🔥 espera que la aprobación se mine
+      toast.success('✅ Aprobación completada');
+
+      // Step 4: List NFT
       toast.info('Listando NFT para la venta...');
       await listNFT(tokenId, price);
       setProgress(prev => ({ ...prev, list: true }));
       toast.success('NFT listado exitosamente!');
+
 
       // Redirect after success
       setTimeout(() => {
@@ -133,7 +150,7 @@ export default function CreateNFTPage() {
     }
   };
 
-  if (!isConnected) {
+  if (!isConnected || !address) {
     return (
       <div className="max-w-2xl mx-auto text-center py-12">
         <Card>
@@ -213,7 +230,7 @@ export default function CreateNFTPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="price">Precio (ETH)</Label>
+                <Label htmlFor="price">Precio (DIP)</Label>
                 <Input
                   id="price"
                   type="number"

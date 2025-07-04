@@ -68,8 +68,8 @@ export class AIImageService {
         parameters: {
           width: dimensions.width,
           height: dimensions.height,
-          num_inference_steps: options.steps || 30,
-          guidance_scale: options.guidance || 7.5,
+          num_inference_steps: options.steps || 12,    // valores bajos recomendados (10–15)
+          guidance_scale: options.guidance || 10.0,     // escala usual para MIM
         }
       });
 
@@ -80,7 +80,7 @@ export class AIImageService {
     }
   }
 
-  async generateMultipleImages(options: ImageGenerationOptions, count: number = 4): Promise<Blob[]> {
+  async generateMultipleImages(options: ImageGenerationOptions, count: number = 1): Promise<Blob[]> {
     const promises = Array(count).fill(null).map(() => this.generateImage(options));
     
     try {
