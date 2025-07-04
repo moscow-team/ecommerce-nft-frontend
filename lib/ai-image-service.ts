@@ -73,7 +73,7 @@ export class AIImageService {
         }
       });
 
-      return response as any;
+      return response;
     } catch (error) {
       console.error('Error generating image:', error);
       throw new Error('Failed to generate image. Please check your API key and try again.');
