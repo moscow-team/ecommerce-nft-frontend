@@ -19,21 +19,7 @@ if (!projectId || projectId === 'demo') {
   );
 }
 
-const chains = [{
-  id: 31337, // Localhost chain ID
-  name: 'Localhost',
-  nativeCurrency: {
-    name: 'Ether',
-    symbol: 'ETH',
-    decimals: 18,
-  },
-  rpcUrls: {
-    default: { http: ['http://localhost:8545'] }, // Localhost RPC URL
-  },
-  blockExplorers: {
-    default: { name: 'Localhost Explorer', url: 'http://localhost:8545' },
-  },
-},]; // 👈 incluimos localhost
+const chains = [localhost] as const;
 
 const config = getDefaultConfig({
   appName: 'Moscow NFTs',
